@@ -1,11 +1,11 @@
 "use client";
 import React from "react";
-import { Label } from "../ui/label";
-import { Input } from "../ui/input";
+import { Label } from "./ui/label";
+import { Input } from "./ui/input";
 import { cn } from "@/lib/utils";
 import { IconBrandGoogle } from "@tabler/icons-react";
 
-export default function SignInFormDemo() {
+export default function SignInForm() {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     console.log("Sign-in form submitted");

@@ -1,8 +1,8 @@
-import SignInFormDemo from '@/components/signin/signin-form'
+import SignInForm from '@/components/signin/signin-form'
 import React from 'react'
 
 export default function Login() {
   return (
-    <SignInFormDemo />
+    <SignInForm />
   )
 }
