@@ -1,14 +1,39 @@
+// components/signin/signin-form.tsx
 "use client";
-import React from "react";
+import React, { useEffect } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 import { cn } from "@/lib/utils";
 import { IconBrandGoogle } from "@tabler/icons-react";
+import {
+  useSignInWithEmailAndPassword,
+  useSignInWithGoogle,
+} from "react-firebase-hooks/auth";
+import { auth, googleProvider } from "@/lib/firebaseConfig";
 
 export default function SignInForm() {
+  const [signInWithEmailAndPassword, user, loading, error] =
+    useSignInWithEmailAndPassword(auth);
+  const [signInWithGoogle, googleUser, googleError] = useSignInWithGoogle(auth);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (user || googleUser) {
+      router.push("/dashboard");
+    }
+  }, [user, googleUser, router]);
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log("Sign-in form submitted");
+    const email = (
+      e.currentTarget.elements.namedItem("email") as HTMLInputElement
+    ).value;
+    const password = (
+      e.currentTarget.elements.namedItem("password") as HTMLInputElement
+    ).value;
+    signInWithEmailAndPassword(email, password);
   };
 
   return (
@@ -37,14 +62,32 @@ export default function SignInForm() {
           Sign in &rarr;
           <BottomGradient />
         </button>
+        {error && <p className="text-red-500 mt-2">{error.message}</p>}
+
+        <div className="mt-4">
+          <Link href="/reset-password">Forgot your password?</Link>
+        </div>
 
         <div className="bg-gradient-to-r from-transparent via-neutral-300 dark:via-neutral-700 to-transparent my-8 h-[1px] w-full" />
 
         <div className="flex flex-col space-y-4">
+          <Link href="/register">
+            <button
+              className="relative group/btn flex space-x-2 items-center justify-start px-4 w-full text-black rounded-md h-10 font-medium shadow-input bg-gray-50 dark:bg-zinc-900 dark:shadow-[0px_0px_1px_1px_var(--neutral-800)]"
+              type="button"
+            >
+              <span className="text-neutral-700 dark:text-neutral-300 text-sm">
+                Dont have an account? Sign up
+              </span>
+
+              <BottomGradient />
+            </button>
+          </Link>
+
           <button
             className="relative group/btn flex space-x-2 items-center justify-start px-4 w-full text-black rounded-md h-10 font-medium shadow-input bg-gray-50 dark:bg-zinc-900 dark:shadow-[0px_0px_1px_1px_var(--neutral-800)]"
             type="button"
-            onClick={() => console.log("Google sign-in clicked")}
+            onClick={() => signInWithGoogle()}
           >
             <IconBrandGoogle className="h-4 w-4 text-neutral-800 dark:text-neutral-300" />
             <span className="text-neutral-700 dark:text-neutral-300 text-sm">
@@ -52,6 +95,10 @@ export default function SignInForm() {
             </span>
             <BottomGradient />
           </button>
+
+          {googleError && (
+            <p className="text-red-500 mt-2">{googleError.message}</p>
+          )}
         </div>
       </form>
     </div>

@@ -1,20 +1,51 @@
+"use client";
+import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "@/lib/firebaseConfig";
+import { SidebarProvider, SidebarTrigger } from "@/components/sidebar/ui/sidebar";
+import { AppSidebar } from "@/components/sidebar/app-sidebar";
 
-import { cookies } from "next/headers"
+export default function Layout({ children }: { children: React.ReactNode }) {
+  const [loading, setLoading] = useState(true);
+  const [authenticated, setAuthenticated] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const router = useRouter();
 
-import { SidebarProvider, SidebarTrigger } from "@/components/sidebar/ui/sidebar"
-import { AppSidebar } from "@/components/sidebar/app-sidebar"
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setAuthenticated(true);
+      } else {
+        setAuthenticated(false);
+        router.push("/login");
+      }
+      setLoading(false);
+    });
 
-export default async function Layout({ children }: { children: React.ReactNode }) {
-  const cookieStore = await cookies()
-  const defaultOpen = cookieStore.get("sidebar:state")?.value === "true"
+    return () => unsubscribe();
+  }, [router]);
+
+  useEffect(() => {
+    const sidebarState = localStorage.getItem("sidebar:state");
+    setSidebarOpen(sidebarState === "true");
+  }, []);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!authenticated) {
+    return null;
+  }
 
   return (
-    <SidebarProvider defaultOpen={defaultOpen}>
+    <SidebarProvider defaultOpen={sidebarOpen}>
       <AppSidebar />
       <main>
         <SidebarTrigger />
         {children}
       </main>
     </SidebarProvider>
-  )
+  );
 }

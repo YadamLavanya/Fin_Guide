@@ -1,3 +1,4 @@
+"use client";
 import { Calendar, Home, Inbox, Search, Settings } from "lucide-react"
 
 import {
@@ -14,37 +15,36 @@ import {
 
 import { ChevronUp, User2 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/dropdown/dropdown-menu"
+import { useRouter } from "next/navigation"
+import { auth } from "@/lib/firebaseConfig"
+import { signOut } from "firebase/auth"
 
 // Menu items.
 const items = [
   {
     title: "Home",
-    url: "#",
+    url: "/dashboard",
     icon: Home,
   },
   {
-    title: "Inbox",
-    url: "#",
-    icon: Inbox,
-  },
-  {
-    title: "Calendar",
-    url: "#",
-    icon: Calendar,
-  },
-  {
-    title: "Search",
-    url: "#",
-    icon: Search,
-  },
-  {
     title: "Settings",
-    url: "#",
+    url: "/dashboard/settings",
     icon: Settings,
   },
 ]
 
 export function AppSidebar() {
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      router.push("/login");
+    } catch (error) {
+      console.error("Error signing out: ", error);
+    }
+  };
+
   return (
     <Sidebar>
       <SidebarContent>
@@ -81,10 +81,7 @@ export function AppSidebar() {
                   <DropdownMenuItem>
                     <span>Account</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <span>Billing</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleSignOut}>
                     <span>Sign out</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
