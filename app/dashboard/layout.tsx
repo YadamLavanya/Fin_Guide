@@ -3,8 +3,9 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebaseConfig";
-import { SidebarProvider, SidebarTrigger } from "@/components/sidebar/ui/sidebar";
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/sidebar/app-sidebar";
+import { ThemeProvider } from "../providers/theme-provider";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
@@ -31,21 +32,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     setSidebarOpen(sidebarState === "true");
   }, []);
 
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
   if (!authenticated) {
     return null;
   }
 
   return (
-    <SidebarProvider defaultOpen={sidebarOpen}>
+    <SidebarProvider defaultOpen={true}>
       <AppSidebar />
+      <SidebarInset>
       <main>
         <SidebarTrigger />
         {children}
       </main>
+      </SidebarInset>
     </SidebarProvider>
   );
 }

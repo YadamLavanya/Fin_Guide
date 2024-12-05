@@ -3,8 +3,8 @@
 import React, { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Label } from "./ui/label";
-import { Input } from "./ui/input";
+import { Label } from "../ui/label";
+import { Input } from "../ui/input";
 import { cn } from "@/lib/utils";
 import { IconBrandGoogle } from "@tabler/icons-react";
 import {

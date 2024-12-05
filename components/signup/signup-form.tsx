@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { Label } from "../signin/ui/label";
-import { Input } from "../signin/ui/input";
+import { Label } from "../ui/label";
+import { Input } from "../ui/input";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { IconBrandGoogle } from "@tabler/icons-react";
@@ -16,6 +16,26 @@ export default function SignupForm() {
   const [formError, setFormError] = useState("");
   const router = useRouter();
 
+  const validatePassword = (password: string): string[] => {
+    const errors: string[] = [];
+    if (password.length < 8) {
+      errors.push("Password must be at least 8 characters long.");
+    }
+    if (!/[A-Z]/.test(password)) {
+      errors.push("Password must contain at least one uppercase letter.");
+    }
+    if (!/[a-z]/.test(password)) {
+      errors.push("Password must contain at least one lowercase letter.");
+    }
+    if (!/[0-9]/.test(password)) {
+      errors.push("Password must contain at least one number.");
+    }
+    if (!/[!@#$%^&*]/.test(password)) {
+      errors.push("Password must contain at least one special character.");
+    }
+    return errors;
+  };
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const firstname = (e.currentTarget.elements.namedItem("firstname") as HTMLInputElement).value;
@@ -25,9 +45,9 @@ export default function SignupForm() {
     const confirmPassword = (e.currentTarget.elements.namedItem("confirm-password") as HTMLInputElement).value;
 
     // Password validation
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-    if (!passwordRegex.test(password)) {
-      setPasswordError("Password must contain at least 8 characters, including uppercase, lowercase, numeric, and special characters.");
+    const passwordErrors = validatePassword(password);
+    if (passwordErrors.length > 0) {
+      setPasswordError(passwordErrors.join(" "));
       setTimeout(() => setPasswordError(""), 10000);
       return;
     }
@@ -62,31 +82,27 @@ export default function SignupForm() {
       </p>
 
       <form className="my-8" onSubmit={handleSubmit}>
-        <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 mb-4">
-          <LabelInputContainer>
-            <Label htmlFor="firstname">First Name</Label>
-            <Input id="firstname" placeholder="Adham" type="text" />
-          </LabelInputContainer>
-          <LabelInputContainer>
-            <Label htmlFor="lastname">Last name</Label>
-            <Input id="lastname" placeholder="Mazen" type="text" />
-          </LabelInputContainer>
-        </div>
+      <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 mb-4">
+        <LabelInputContainer className="mb-4">
+          <Label htmlFor="firstname">First Name</Label>
+          <Input id="firstname" placeholder="John" type="text" required />
+        </LabelInputContainer>
+        <LabelInputContainer className="mb-4">
+          <Label htmlFor="lastname">Last Name</Label>
+          <Input id="lastname" placeholder="Doe" type="text" required />
+        </LabelInputContainer>
+      </div>
         <LabelInputContainer className="mb-4">
           <Label htmlFor="email">Email Address</Label>
-          <Input id="email" placeholder="someone@example.com" type="email" />
+          <Input id="email" placeholder="someone@example.com" type="email" required />
         </LabelInputContainer>
         <LabelInputContainer className="mb-4">
           <Label htmlFor="password">Password</Label>
-          <Input id="password" placeholder="••••••••" type="password" />
+          <Input id="password" placeholder="••••••••" type="password" required />
         </LabelInputContainer>
         <LabelInputContainer className="mb-8">
-          <Label htmlFor="confirmpassword">Confirm Password</Label>
-          <Input
-            id="confirm-password"
-            placeholder="••••••••"
-            type="password"
-          />
+          <Label htmlFor="confirm-password">Confirm Password</Label>
+          <Input id="confirm-password" placeholder="••••••••" type="password" required />
         </LabelInputContainer>
 
         {passwordError && <p className="text-red-500 mt-2 mb-4">{passwordError}</p>}

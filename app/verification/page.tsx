@@ -1,11 +1,11 @@
 "use client";
-import { Label } from "@/components/signin/ui/label";
+import { Label } from "@/components/ui/label";
 import {
   InputOTP,
   InputOTPGroup,
   InputOTPSeparator,
   InputOTPSlot,
-} from "@/components/otpinput/input-otp";
+} from "@/components/ui/input-otp";
 import { cn } from "@/lib/utils";
 
 export default function ResetPassword() {

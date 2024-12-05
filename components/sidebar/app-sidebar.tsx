@@ -1,5 +1,5 @@
 "use client";
-import { Calendar, Home, Inbox, Search, Settings } from "lucide-react"
+import { Wallet, Home, Receipt, Settings, Link } from "lucide-react";
 
 import {
   Sidebar,
@@ -11,13 +11,18 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/sidebar/ui/sidebar"
+} from "@/components/ui/sidebar";
 
-import { ChevronUp, User2 } from "lucide-react"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/dropdown/dropdown-menu"
-import { useRouter } from "next/navigation"
-import { auth } from "@/lib/firebaseConfig"
-import { signOut } from "firebase/auth"
+import { ChevronUp, User, LogOut } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useRouter } from "next/navigation";
+import { auth } from "@/lib/firebaseConfig";
+import { signOut } from "firebase/auth";
 
 // Menu items.
 const items = [
@@ -27,11 +32,16 @@ const items = [
     icon: Home,
   },
   {
+    title: "Expenses",
+    url: "/dashboard/expenses",
+    icon: Receipt,
+  },
+  {
     title: "Settings",
     url: "/dashboard/settings",
     icon: Settings,
   },
-]
+];
 
 export function AppSidebar() {
   const router = useRouter();
@@ -44,6 +54,11 @@ export function AppSidebar() {
       console.error("Error signing out: ", error);
     }
   };
+
+  const handleProfileClick = () => {
+    router.push("/dashboard/profile");
+  }
+
 
   return (
     <Sidebar>
@@ -67,29 +82,28 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-      <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <SidebarMenuButton>
-                    <User2 /> Username
-                    <ChevronUp className="ml-auto" />
-                  </SidebarMenuButton>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  side="top"
-                  className="w-[--radix-popper-anchor-width]"
-                >
-                  <DropdownMenuItem>
-                    <span>Account</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleSignOut}>
-                    <span>Sign out</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <SidebarMenuButton>
+              <User /> Username
+              <ChevronUp className="ml-auto" />
+            </SidebarMenuButton>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            side="top"
+            className="w-[--radix-popper-anchor-width]"
+          >
+            <DropdownMenuItem onClick={handleProfileClick}>
+              <User className="mr-2 h-4 w-4" />
+              <span>Profile</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleSignOut}>
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>Sign out</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </SidebarFooter>
     </Sidebar>
-    
-
-    
-  )
+  );
 }

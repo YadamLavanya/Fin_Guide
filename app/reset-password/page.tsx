@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
-import { Label } from "@/components/signin/ui/label";
-import { Input } from "@/components/signin/ui/input";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { auth } from "@/lib/firebaseConfig";
