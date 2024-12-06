@@ -32,9 +32,9 @@ const Card = ({ title, description, children }: {
   description: string;
   children: React.ReactNode;
 }) => (
-  <div className="rounded-lg border bg-card p-6 shadow-sm h-full">
+  <div className="rounded-lg border bg-card p-6 shadow-sm h-full text-card-foreground dark:border-gray-800 dark:bg-gray-900 dark:text-gray-100">
     <h3 className="font-semibold">{title}</h3>
-    <p className="text-sm text-muted-foreground mb-4">{description}</p>
+    <p className="text-sm text-muted-foreground mb-4 dark:text-gray-400">{description}</p>
     {children}
   </div>
 );
@@ -53,32 +53,36 @@ const TransactionRow = ({ transaction }: {
   const CategoryIcon = CATEGORY_ICONS[transaction.category as keyof typeof CATEGORY_ICONS] || ShoppingBagIcon;
   
   return (
-    <div className="flex items-center justify-between p-4 border-b last:border-0">
+    <div className="flex items-center justify-between p-4 border-b last:border-0 border-muted dark:border-gray-800">
       <div className="flex items-center gap-4">
         <div className={`p-2 rounded-full ${
-          transaction.type === 'expense' ? 'bg-red-100' : 'bg-green-100'
+          transaction.type === 'expense' 
+            ? 'bg-destructive/20 text-destructive dark:bg-destructive/20 dark:text-destructive' 
+            : 'bg-success/20 text-success dark:bg-success/20 dark:text-success'
         }`}>
           {transaction.type === 'expense' ? 
-            <ArrowDownIcon className="w-4 h-4 text-red-500" /> : 
-            <ArrowUpIcon className="w-4 h-4 text-green-500" />
+            <ArrowDownIcon className="w-4 h-4" /> : 
+            <ArrowUpIcon className="w-4 h-4" />
           }
         </div>
         <div className="flex items-center gap-3">
-          <CategoryIcon className="w-4 h-4 text-muted-foreground" />
+          <CategoryIcon className="w-4 h-4 text-muted-foreground dark:text-muted-foreground" />
           <div>
-            <p className="font-medium">{transaction.name}</p>
-            <p className="text-sm text-muted-foreground">{transaction.category}</p>
+            <p className="font-medium text-foreground dark:text-foreground">{transaction.name}</p>
+            <p className="text-sm text-muted-foreground dark:text-muted-foreground">{transaction.category}</p>
           </div>
         </div>
       </div>
       <div className="text-right">
         <p className={`font-medium ${
-          transaction.type === 'expense' ? 'text-red-500' : 'text-green-500'
+          transaction.type === 'expense' 
+            ? 'text-destructive dark:text-destructive' 
+            : 'text-success dark:text-success'
         }`}>
           {transaction.type === 'expense' ? '-' : '+'}
           ${Math.abs(transaction.amount).toLocaleString()}
         </p>
-        <p className="text-sm text-muted-foreground">{transaction.date}</p>
+        <p className="text-sm text-muted-foreground dark:text-muted-foreground">{transaction.date}</p>
       </div>
     </div>
   );
@@ -129,7 +133,13 @@ export default function BudgetDashboard() {
     }
   ];
 
-  const COLORS = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'];
+  const COLORS = [
+    'hsl(var(--chart-primary))',
+    'hsl(var(--chart-secondary))',
+    'hsl(var(--chart-success))',
+    'hsl(var(--chart-warning))',
+    'hsl(var(--chart-error))'
+  ];
 
   const statCards = [
     { title: 'Total Spent', value: '$2,250', change: '+12.5%' },
@@ -138,7 +148,7 @@ export default function BudgetDashboard() {
   ];
 
   return (
-    <div className="min-h-screen w-full bg-background">
+    <div className="min-h-screen w-full bg-background text-foreground dark:bg-gray-950 dark:text-gray-100">
       <div className="w-full h-full p-4 md:p-6 lg:p-8">        
         {/* Stats Row - Auto-fit grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 auto-rows-fr gap-4 md:gap-6 mb-6">
@@ -147,9 +157,9 @@ export default function BudgetDashboard() {
               <div className="flex justify-between items-end">
                 <span className="text-2xl font-bold">{stat.value}</span>
                 <span className={`text-sm ${
-                  stat.change.startsWith('+') ? 'text-green-500' : 
-                  stat.change.startsWith('-') ? 'text-red-500' : 
-                  'text-gray-500'
+                  stat.change.startsWith('+') ? 'text-chart-success dark:text-chart-success' : 
+                  stat.change.startsWith('-') ? 'text-chart-error dark:text-chart-error' : 
+                  'text-muted-foreground dark:text-muted-foreground'
                 }`}>{stat.change}</span>
               </div>
             </Card>
@@ -179,7 +189,7 @@ export default function BudgetDashboard() {
                     <Line 
                       type="monotone" 
                       dataKey="amount" 
-                      stroke="#8884d8"
+                      stroke="hsl(var(--chart-primary))"
                       strokeWidth={2} 
                     />
                   </LineChart>
@@ -226,7 +236,7 @@ export default function BudgetDashboard() {
               title="Recent Transactions"
               description=""
             >
-              <div className="divide-y rounded-md border">
+              <div className="divide-y rounded-md border border-muted dark:border-gray-800 dark:divide-gray-800">
                 {recentTransactions.map((transaction) => (
                   <TransactionRow 
                     key={transaction.id} 

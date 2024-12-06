@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from 'react';
+import { useTheme } from "next-themes";
 import {
   Card,
   CardHeader,
@@ -29,8 +30,12 @@ import {
 
 export default function SettingsPage() {
   const [emailNotifications, setEmailNotifications] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
-  
+  const { theme, setTheme } = useTheme();
+  const isDarkMode = theme === "dark";
+
+  const toggleTheme = () => {
+    setTheme(isDarkMode ? "light" : "dark");
+  };
 
   return (
     <div className="container h-[calc(100vh-2rem)] mx-auto py-4">
@@ -68,7 +73,7 @@ export default function SettingsPage() {
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <div className="flex items-center gap-2">
-                    {darkMode ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+                    {isDarkMode ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
                     <label className="font-medium">Theme</label>
                   </div>
                   <p className="text-sm text-muted-foreground">
@@ -76,8 +81,8 @@ export default function SettingsPage() {
                   </p>
                 </div>
                 <Switch
-                  checked={darkMode}
-                  onCheckedChange={setDarkMode}
+                  checked={isDarkMode}
+                  onCheckedChange={toggleTheme}
                 />
               </div>
             </div>

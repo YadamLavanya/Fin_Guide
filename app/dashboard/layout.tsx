@@ -5,7 +5,6 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebaseConfig";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/sidebar/app-sidebar";
-import { ThemeProvider } from "../providers/theme-provider";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
