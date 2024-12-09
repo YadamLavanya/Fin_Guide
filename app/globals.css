@@ -1,25 +1,90 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-@layer base {
 
+@layer base {
   :root {
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%}
+    --sidebar-background: var(--background);
+    --sidebar-foreground: var(--foreground);
+    --sidebar-primary: var(--primary);
+    --sidebar-primary-foreground: var(--primary-foreground);
+    --sidebar-accent: var(--accent);
+    --sidebar-accent-foreground: var(--accent-foreground);
+    --sidebar-border: var(--border);
+    --sidebar-ring: var(--ring);
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 5.9% 10%;
+    --radius: 0.5rem;
+    
+    /* Chart Colors */
+    --chart-primary: 241 84% 70%;
+    --chart-secondary: 221 83% 53%;
+    --chart-success: 142 76% 36%;
+    --chart-warning: 38 92% 50%;
+    --chart-error: 0 84% 60%;
+  }
+
   .dark {
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%}
+    --background: 224 25% 7%;    /* Warmer dark background */
+    --foreground: 210 20% 98%;   /* Softer white text */
+    
+    --card: 224 25% 8%;         /* Slightly lighter than background */
+    --card-foreground: 210 20% 98%;
+    
+    --popover: 224 25% 8%;
+    --popover-foreground: 210 20% 98%;
+    
+    --primary: 210 20% 98%;
+    --primary-foreground: 224 25% 7%;
+    
+    --secondary: 224 25% 12%;    /* Softer secondary background */
+    --secondary-foreground: 210 20% 98%;
+    
+    --muted: 224 25% 12%;
+    --muted-foreground: 215 20% 65%;  /* More visible muted text */
+    
+    --accent: 224 25% 12%;
+    --accent-foreground: 210 20% 98%;
+    
+    --destructive: 0 84% 60%;    /* Brighter red for better visibility */
+    --destructive-foreground: 210 20% 98%;
+    
+    --border: 224 25% 15%;      /* Subtle borders */
+    --input: 224 25% 15%;
+    --ring: 216 25% 65%;        /* More visible focus rings */
+
+    /* Sidebar colors will inherit from the above variables */
+    --sidebar-background: var(--background);
+    --sidebar-foreground: var(--foreground);
+    --sidebar-primary: var(--primary);
+    --sidebar-primary-foreground: var(--primary-foreground);
+    --sidebar-accent: var(--accent);
+    --sidebar-accent-foreground: var(--accent-foreground);
+    --sidebar-border: var(--border);
+    --sidebar-ring: var(--ring);
+
+    /* Chart Colors - Adjusted for dark mode */
+    --chart-primary: 241 70% 75%;
+    --chart-secondary: 221 70% 60%;
+    --chart-success: 142 70% 45%;
+    --chart-warning: 38 85% 55%;
+    --chart-error: 0 75% 65%;
+  }
 }
-  

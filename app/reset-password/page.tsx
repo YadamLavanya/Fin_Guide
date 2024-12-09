@@ -1,22 +1,27 @@
+
 "use client";
-import React, { useState } from "react";
-import { Label } from "@/components/signin/ui/label";
-import { Input } from "@/components/signin/ui/input";
+import { useState } from "react";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { auth } from "@/lib/firebaseConfig";
-import { sendPasswordResetEmail } from "firebase/auth";
 
 export default function ResetPassword() {
-  const [contact, setContact] = useState("");
+  const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
-      await sendPasswordResetEmail(auth, contact);
-      setMessage("Reset link sent successfully. Please check your email.");
+      const res = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await res.json();
+      setMessage(data.message);
       setError("");
     } catch (err) {
       setError(err.message);
@@ -30,49 +35,40 @@ export default function ResetPassword() {
         Reset Password
       </h2>
       <p className="text-neutral-600 text-sm max-w-sm mt-2 dark:text-neutral-300">
-        Enter your email to receive a Reset Link.
+        Enter your email to receive a reset link.
       </p>
+
       <form className="my-8" onSubmit={handleSubmit}>
         <LabelInputContainer className="mb-4">
-          <Label htmlFor="contact">Email</Label>
+          <Label htmlFor="email">Email</Label>
           <Input
-            id="contact"
-            placeholder="Enter your email"
+            id="email"
             type="email"
-            value={contact}
-            onChange={(e) => setContact(e.target.value)}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Enter your email"
           />
         </LabelInputContainer>
 
         <button
-          className="bg-gradient-to-br from-black dark:from-zinc-900 to-neutral-600 block w-full text-white rounded-md h-10 font-medium shadow-[0px_1px_0px_0px_#ffffff40_inset,0px_-1px_0px_0px_#ffffff40_inset] dark:shadow-[0px_1px_0px_0px_var(--zinc-800)_inset,0px_-1px_0px_0px_var(--zinc-800)_inset]"
+          className="bg-gradient-to-br from-black dark:from-zinc-900 to-neutral-600 block w-full text-white rounded-md h-10 font-medium"
           type="submit"
         >
-          Send Reset Link &rarr;
-          <BottomGradient />
+          Send Reset Link
         </button>
 
-        <div className="text-s mt-2 mb-4">
-          <Link href="/login">
+        <div className="text-sm mt-4">
+          <Link href="/login" className="text-blue-500 hover:underline">
             Back to Login
           </Link>
         </div>
-        
+
         {message && <p className="text-green-500 mt-2">{message}</p>}
         {error && <p className="text-red-500 mt-2">{error}</p>}
       </form>
     </div>
   );
 }
-
-const BottomGradient = () => {
-  return (
-    <>
-      <span className="group-hover/btn:opacity-100 block transition duration-500 opacity-0 absolute h-px w-full -bottom-px inset-x-0 bg-gradient-to-r from-transparent via-cyan-500 to-transparent" />
-      <span className="group-hover/btn:opacity-100 blur-sm block transition duration-500 opacity-0 absolute h-px w-1/2 mx-auto -bottom-px inset-x-10 bg-gradient-to-r from-transparent via-indigo-500 to-transparent" />
-    </>
-  );
-};
 
 const LabelInputContainer = ({
   children,
