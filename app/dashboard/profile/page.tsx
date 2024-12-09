@@ -187,7 +187,7 @@ export default function ProfilePage() {
                     variant="ghost"
                     className="absolute bottom-0 right-0 rounded-full bg-background shadow"
                     // onClick={() => document.getElementById('avatar')?.click()}
-                    disabled={uploadingImage}
+                    // disabled={uploadingImage}
                   >
                     <Camera className="h-4 w-4" />
                   </Button>
