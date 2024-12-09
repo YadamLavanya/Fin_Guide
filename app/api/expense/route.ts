@@ -87,6 +87,19 @@ export async function GET(req: Request) {
   return NextResponse.json(expenses);
 }
 
+// Add validation functions
+const sanitizeString = (str: string): string => {
+  return str.replace(/[<>]/g, '').trim();
+};
+
+const validateAmount = (amount: number): boolean => {
+  return !isNaN(amount) && amount > 0 && amount <= 999999999.99;
+};
+
+const validateDescription = (desc: string): boolean => {
+  return /^[a-zA-Z0-9\s\-_.,!?()]{1,255}$/.test(desc);
+};
+
 export async function POST(req: Request) {
   const session = await getServerSession();
   if (!session?.user?.email) {
@@ -96,6 +109,25 @@ export async function POST(req: Request) {
   const data = await req.json();
 
   try {
+    // Validate and sanitize inputs
+    const description = sanitizeString(data.description);
+    const amount = parseFloat(data.amount);
+
+    if (!validateDescription(description)) {
+      return NextResponse.json({ error: 'Invalid description format' }, { status: 400 });
+    }
+
+    if (!validateAmount(amount)) {
+      return NextResponse.json({ error: 'Invalid amount' }, { status: 400 });
+    }
+
+    // Update the expense data with sanitized values
+    const expenseData = {
+      ...data,
+      description,
+      amount,
+    };
+
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
     });

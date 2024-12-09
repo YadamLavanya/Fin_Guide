@@ -28,8 +28,8 @@ export default function ProfilePage() {
   const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState<ProfileData | null>(null);
-  // const [imageFile, setImageFile] = useState<File | null>(null);
-  // const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     fetchProfile();
@@ -50,28 +50,28 @@ export default function ProfilePage() {
     }
   };
 
-  // const handleImageUpload = async (file: File) => {
-  //   setUploadingImage(true);
-  //   try {
-  //     const formData = new FormData();
-  //     formData.append('file', file);
+  const handleImageUpload = async (file: File) => {
+    setUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
       
-  //     const response = await fetch('/api/upload', {
-  //       method: 'POST',
-  //       body: formData,
-  //     });
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
       
-  //     if (!response.ok) throw new Error('Upload failed');
+      if (!response.ok) throw new Error('Upload failed');
       
-  //     const { url } = await response.json();
-  //     return url;
-  //   } catch (error) {
-  //     toast.error('Failed to upload image');
-  //     return null;
-  //   } finally {
-  //     setUploadingImage(false);
-  //   }
-  // };
+      const { url } = await response.json();
+      return url;
+    } catch (error) {
+      toast.error('Failed to upload image');
+      return null;
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -109,10 +109,10 @@ export default function ProfilePage() {
     try {
       let avatarUrl = profile.contactInfo?.avatarUrl;
       
-      // if (imageFile) {
-      //   avatarUrl = await handleImageUpload(imageFile);
-      //   if (!avatarUrl) throw new Error('Failed to upload image');
-      // }
+      if (imageFile) {
+        avatarUrl = await handleImageUpload(imageFile);
+        if (!avatarUrl) throw new Error('Failed to upload image');
+      }
 
       const response = await fetch('/api/profile', {
         method: 'PUT',
@@ -142,16 +142,16 @@ export default function ProfilePage() {
     }
   };
 
-  // const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  //   const file = e.target.files?.[0];
-  //   if (file) {
-  //     if (file.size > 5 * 1024 * 1024) {
-  //       toast.error('File size must be less than 5MB');
-  //       return;
-  //     }
-  //     setImageFile(file);
-  //   }
-  // };
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('File size must be less than 5MB');
+        return;
+      }
+      setImageFile(file);
+    }
+  };
 
   if (!profile || loading) {
     return <ProfileSkeleton />;
@@ -180,14 +180,14 @@ export default function ProfilePage() {
                     id="avatar"
                     accept="image/*"
                     className="hidden"
-                    // onChange={handleFileChange}
+                    onChange={handleFileChange}
                   />
                   <Button
                     size="icon"
                     variant="ghost"
                     className="absolute bottom-0 right-0 rounded-full bg-background shadow"
-                    // onClick={() => document.getElementById('avatar')?.click()}
-                    // disabled={uploadingImage}
+                    onClick={() => document.getElementById('avatar')?.click()}
+                    disabled={uploadingImage}
                   >
                     <Camera className="h-4 w-4" />
                   </Button>

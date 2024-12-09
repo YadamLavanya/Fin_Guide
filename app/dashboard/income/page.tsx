@@ -94,6 +94,7 @@ export default function IncomePage() {
   const { toast } = useToast();
   const [isEditIncomeOpen, setIsEditIncomeOpen] = useState(false);
   const [selectedIncome, setSelectedIncome] = useState<Income | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Fetch incomes from API
   const fetchIncomes = async () => {
@@ -123,6 +124,8 @@ export default function IncomePage() {
 
   // Handler functions similar to expenses but for income
   const handleAddIncome = async (formData: FormData) => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     try {
       const response = await fetch('/api/income', {
         method: 'POST',
@@ -146,10 +149,14 @@ export default function IncomePage() {
         description: error instanceof Error ? error.message : "Failed to add income",
         variant: "destructive"
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleEditIncome = async (formData: FormData) => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     try {
       const incomeData = {
         id: selectedIncome?.id,
@@ -181,6 +188,8 @@ export default function IncomePage() {
         description: error instanceof Error ? error.message : "Failed to update income",
         variant: "destructive"
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -297,8 +306,23 @@ export default function IncomePage() {
                     handleAddIncome(new FormData(e.currentTarget));
                   }}>
                     <div className="grid gap-4 py-4">
-                      <Input name="description" type="text" placeholder="Description" required />
-                      <Input name="amount" type="number" placeholder="Amount" step="0.01" required />
+                      <Input 
+                        name="description" 
+                        type="text" 
+                        placeholder="Description" 
+                        maxLength={255} // prevent long text injections
+                        pattern="^[a-zA-Z0-9\s\-_.,!?()]+$" // alphanumeric and basic punctuation only
+                        required 
+                      />
+                      <Input 
+                        name="amount" 
+                        type="number" 
+                        placeholder="Amount" 
+                        step="0.01" 
+                        min="0.01" // prevent negative numbers
+                        max="999999999.99" // reasonable maximum
+                        required 
+                      />
                       <Select name="category">
                         <SelectTrigger>
                           <SelectValue placeholder="Category" />
@@ -367,7 +391,9 @@ export default function IncomePage() {
                       )}
                     </div>
                     <DialogFooter>
-                      <Button type="submit">Save</Button>
+                      <Button type="submit" disabled={isSubmitting}>
+                        {isSubmitting ? "Saving..." : "Save"}
+                      </Button>
                     </DialogFooter>
                   </form>
                 </DialogContent>
@@ -473,6 +499,8 @@ export default function IncomePage() {
                         name="description" 
                         type="text" 
                         placeholder="Description" 
+                        maxLength={255} // prevent long text injections
+                        pattern="^[a-zA-Z0-9\s\-_.,!?()]+$" // alphanumeric and basic punctuation only
                         defaultValue={selectedIncome?.description}
                         required 
                       />
@@ -481,6 +509,8 @@ export default function IncomePage() {
                         type="number" 
                         placeholder="Amount" 
                         step="0.01" 
+                        min="0.01" // prevent negative numbers
+                        max="999999999.99" // reasonable maximum
                         defaultValue={selectedIncome?.amount}
                         required 
                       />
@@ -526,14 +556,17 @@ export default function IncomePage() {
                         type="button"
                         variant="destructive"
                         onClick={() => {
-                          if (selectedIncome) {
+                          if (selectedIncome && !isSubmitting) {
                             handleDeleteIncome(selectedIncome.id);
                           }
                         }}
+                        disabled={isSubmitting}
                       >
                         Delete
                       </Button>
-                      <Button type="submit">Save Changes</Button>
+                      <Button type="submit" disabled={isSubmitting}>
+                        {isSubmitting ? "Saving..." : "Save Changes"}
+                      </Button>
                     </DialogFooter>
                   </form>
                 </DialogContent>

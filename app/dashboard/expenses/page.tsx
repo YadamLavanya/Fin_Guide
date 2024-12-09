@@ -117,6 +117,7 @@ export default function ExpensesPage() {
   const [isEditExpenseOpen, setIsEditExpenseOpen] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>('CASH');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const showToast = (title: string, description: string, variant: "default" | "destructive" = "default") => {
     toast({
@@ -137,6 +138,8 @@ export default function ExpensesPage() {
   }, []);
 
   const handleAddExpense = async (formData: FormData) => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     const frequencyValue = formData.get('frequency');
     const selectedPaymentMethod = formData.get('paymentMethod') as PaymentMethod;
     const customPayment = formData.get('customPaymentMethod') as string;
@@ -162,6 +165,7 @@ export default function ExpensesPage() {
     // Validate frequency before sending
     if (isRecurring && (!expenseData.recurring.pattern.frequency || isNaN(expenseData.recurring.pattern.frequency))) {
       showToast("Error", "Please enter a valid frequency for recurring expenses.", "destructive");
+      setIsSubmitting(false);
       return;
     }
 
@@ -184,10 +188,14 @@ export default function ExpensesPage() {
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
       showToast("Error", errorMessage, "destructive");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleEditExpense = async (formData: FormData) => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     try {
       const expenseData = {
         id: selectedExpense?.id,
@@ -214,6 +222,8 @@ export default function ExpensesPage() {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
       showToast("Error", errorMessage, "destructive");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -317,8 +327,23 @@ export default function ExpensesPage() {
                     handleAddExpense(new FormData(e.currentTarget));
                   }}>
                     <div className="grid gap-4 py-4">
-                      <Input name="description" type="text" placeholder="Description" required />
-                      <Input name="amount" type="number" placeholder="Amount" step="0.01" required />
+                      <Input 
+                        name="description" 
+                        type="text" 
+                        placeholder="Description" 
+                        maxLength={255}
+                        pattern="^[a-zA-Z0-9\s\-_.,!?()]+$"
+                        required 
+                      />
+                      <Input 
+                        name="amount" 
+                        type="number" 
+                        placeholder="Amount" 
+                        step="0.01"
+                        min="0.01"
+                        max="999999999.99"
+                        required 
+                      />
                       <Select name="category">
                         <SelectTrigger>
                           <SelectValue placeholder="Category" />
@@ -401,7 +426,9 @@ export default function ExpensesPage() {
                       )}
                     </div>
                     <DialogFooter>
-                      <Button type="submit">Save</Button>
+                      <Button type="submit" disabled={isSubmitting}>
+                        {isSubmitting ? "Saving..." : "Save"}
+                      </Button>
                     </DialogFooter>
                   </form>
                 </DialogContent>
@@ -529,6 +556,8 @@ export default function ExpensesPage() {
                 name="description" 
                 type="text" 
                 placeholder="Description" 
+                maxLength={255}
+                pattern="^[a-zA-Z0-9\s\-_.,!?()]+$"
                 defaultValue={selectedExpense?.description}
                 required 
               />
@@ -536,7 +565,9 @@ export default function ExpensesPage() {
                 name="amount" 
                 type="number" 
                 placeholder="Amount" 
-                step="0.01" 
+                step="0.01"
+                min="0.01"
+                max="999999999.99"
                 defaultValue={selectedExpense?.amount}
                 required 
               />
@@ -586,15 +617,18 @@ export default function ExpensesPage() {
                 type="button"
                 variant="destructive"
                 onClick={() => {
-                  if (selectedExpense) {
+                  if (selectedExpense && !isSubmitting) {
                     handleDeleteExpense(selectedExpense.id);
                     setIsEditExpenseOpen(false);
                   }
                 }}
+                disabled={isSubmitting}
               >
                 Delete
               </Button>
-              <Button type="submit">Save Changes</Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Saving..." : "Save Changes"}
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>

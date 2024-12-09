@@ -42,6 +42,19 @@ async function ensureUserCategories(userId: string) {
   }
 }
 
+// Add these validation functions at the top
+const sanitizeString = (str: string): string => {
+  return str.replace(/[<>]/g, '').trim();
+};
+
+const validateAmount = (amount: number): boolean => {
+  return !isNaN(amount) && amount > 0 && amount <= 999999999.99;
+};
+
+const validateDescription = (desc: string): boolean => {
+  return /^[a-zA-Z0-9\s\-_.,!?()]{1,255}$/.test(desc);
+};
+
 export async function GET(req: Request) {
   try {
     const session = await getServerSession();
@@ -112,6 +125,25 @@ export async function POST(req: Request) {
         headers: { 'Content-Type': 'application/json' },
       });
     }
+
+    // Validate and sanitize inputs
+    const description = sanitizeString(data.description);
+    const amount = parseFloat(data.amount);
+
+    if (!validateDescription(description)) {
+      return NextResponse.json({ error: 'Invalid description format' }, { status: 400 });
+    }
+
+    if (!validateAmount(amount)) {
+      return NextResponse.json({ error: 'Invalid amount' }, { status: 400 });
+    }
+
+    // Update the income data with sanitized values
+    const incomeData = {
+      ...data,
+      description,
+      amount,
+    };
 
     // Validate payment method
     const paymentMethodName = data.paymentMethod.replace('_', '_') as PaymentMethodEnum;
