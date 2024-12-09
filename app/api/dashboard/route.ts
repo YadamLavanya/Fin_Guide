@@ -4,6 +4,43 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import type { DashboardData } from '@/types/dashboard';
 
+interface CategoryDistribution {
+  categoryId: string;
+  total: number;
+}
+
+interface MonthlyTrend {
+  date: Date;
+  _sum: {
+    amount: number | null;
+  };
+}
+
+interface TrendAccumulator {
+  month: string;
+  amount: number;
+}
+
+interface ExpenseRecord {
+  id: string;
+  description: string | null;
+  amount: number;
+  date: Date;
+  category: { name: string };
+  paymentMethod: { name: string };
+  type: 'expense';
+}
+
+interface IncomeRecord {
+  id: string;
+  description: string | null;
+  amount: number;
+  date: Date;
+  category: { name: string };
+  paymentMethod: { name: string };
+  type: 'income';
+}
+
 export async function GET(): Promise<NextResponse<DashboardData | { error: string }>> {
   try {
     const session = await getServerSession(authOptions);
@@ -147,7 +184,7 @@ export async function GET(): Promise<NextResponse<DashboardData | { error: strin
     ]);
 
     // Process category distribution
-    const categoryIds = categoryDistribution.map(c => c.categoryId);
+    const categoryIds = categoryDistribution.map((c: CategoryDistribution) => c.categoryId);
     const categories = await prisma.category.findMany({
       where: { id: { in: categoryIds } }
     });
@@ -180,7 +217,7 @@ export async function GET(): Promise<NextResponse<DashboardData | { error: strin
           monthlyBudget: 0
         }
       },
-      monthlyTrends: monthlyTrends.reduce((acc: any[], curr) => {
+      monthlyTrends: monthlyTrends.reduce((acc: TrendAccumulator[], curr: MonthlyTrend) => {
         const month = new Date(curr.date).toLocaleString('default', { month: 'short' });
         const existing = acc.find(item => item.month === month);
         if (existing) {
@@ -196,11 +233,11 @@ export async function GET(): Promise<NextResponse<DashboardData | { error: strin
       })),
       recentTransactions: [...expenses, ...incomes]
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-        .map(t => ({
+        .map((t): ExpenseRecord | IncomeRecord => ({
           id: t.id,
           name: t.description || 'No description',
           amount: t.amount || 0,
-          type: 'amount' in t ? 'expense' : 'income',
+          type: 'amount' in t ? ('expense' as const) : ('income' as const),
           category: t.category.name || 'Unknown',
           date: t.date.toISOString(),
           paymentMethod: t.paymentMethod.name || 'Unknown'
