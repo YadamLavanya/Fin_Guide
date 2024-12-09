@@ -1,6 +1,7 @@
 "use client";
-import { Wallet, Home, Receipt, Settings, Link } from "lucide-react";
+import { Wallet, Home, Receipt, Settings, Link as LinkIcon } from "lucide-react";
 import { useSession } from "next-auth/react";
+import Link from "next/link";
 
 import {
   Sidebar,
@@ -75,10 +76,10 @@ export function AppSidebar() {
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <a href={item.url}>
+                    <Link href={item.url} className="flex items-center gap-2">
                       <item.icon />
                       <span>{item.title}</span>
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
