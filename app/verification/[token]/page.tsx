@@ -13,7 +13,13 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Loader2 } from "lucide-react"
 
-const VerificationPage = ({ params }: { params: { token: string } }) => {
+interface VerificationPageProps {
+  params: {
+    token: string;
+  };
+}
+
+const VerificationPage: React.FC<VerificationPageProps> = ({ params }) => {
   const router = useRouter();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('Verifying your email...');
