@@ -274,7 +274,6 @@ export default function ProfilePage() {
                   <div className="flex items-center gap-2 text-amber-600">
                     <AlertCircle className="w-4 h-4" />
                     <p className="text-sm">
-                      You&apos;re approaching your monthly budget limit
                     </p>
                   </div>
                 </div>
