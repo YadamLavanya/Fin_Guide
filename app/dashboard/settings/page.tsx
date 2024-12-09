@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useTheme } from "next-themes";
-import { toast } from "sonner";
+import { useToast } from "@/components/ui/use-toast";
 import type { UserSettings, CategorySettings } from '@/lib/types';
 import {
   Card,
@@ -56,6 +56,7 @@ import {
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
+  const { toast } = useToast();
   const [settings, setSettings] = useState<UserSettings>({
     currency: 'USD',
     theme: 'light',
@@ -84,7 +85,11 @@ export default function SettingsPage() {
       const data = await response.json();
       setSettings(data);
     } catch (error) {
-      toast.error('Failed to load settings');
+      toast({
+        title: "Error",
+        description: "Could not load your settings. Please try again later.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -95,7 +100,11 @@ export default function SettingsPage() {
       const data = await response.json();
       setCategories(data);
     } catch (error) {
-      toast.error('Failed to load categories');
+      toast({
+        title: "Error",
+        description: "Could not load your categories. Please try again later.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -111,9 +120,16 @@ export default function SettingsPage() {
 
       if (!response.ok) throw new Error('Failed to update settings');
       setSettings(newSettings);
-      toast.success('Settings updated successfully');
+      toast({
+        title: "Success",
+        description: "Your settings have been updated successfully.",
+      });
     } catch (error) {
-      toast.error('Failed to update settings');
+      toast({
+        title: "Error",
+        description: "Could not update your settings. Please try again later.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -133,11 +149,18 @@ export default function SettingsPage() {
       if (!response.ok) throw new Error(`Failed to ${action} category`);
       
       await fetchCategories();
-      toast.success(`Category ${action}d successfully`);
+      toast({
+        title: "Success",
+        description: `Category ${action === 'create' ? 'created' : action === 'update' ? 'updated' : 'deleted'} successfully.`,
+      });
       setShowCategoryDialog(false);
       setEditingCategory(null);
     } catch (error) {
-      toast.error(`Failed to ${action} category`);
+      toast({
+        title: "Error",
+        description: `Could not ${action} category. Please try again later.`,
+        variant: "destructive",
+      });
     }
   };
 
@@ -157,7 +180,11 @@ export default function SettingsPage() {
       // If verified, show export confirmation dialog
       setShowExportDialog(true);
     } catch (error) {
-      toast.error('Failed to check verification status');
+      toast({
+        title: "Error",
+        description: "Could not verify your export request. Please try again later.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -168,10 +195,17 @@ export default function SettingsPage() {
       });
       
       if (!response.ok) throw new Error('Export failed');
-      toast.success('Data export has been sent to your email');
+      toast({
+        title: "Success",
+        description: "Your data export has been sent to your email address.",
+      });
       setShowExportDialog(false);
     } catch (error) {
-      toast.error('Failed to export data');
+      toast({
+        title: "Error",
+        description: "Could not export your data. Please try again later.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -181,9 +215,16 @@ export default function SettingsPage() {
         method: 'POST'
       });
       const data = await response.json();
-      toast.info(data.message || 'Please check your email to verify your account');
+      toast({
+        title: "Success",
+        description: "Please check your email for the verification link.",
+      });
     } catch (error) {
-      toast.error('Failed to send verification email');
+      toast({
+        title: "Error",
+        description: "Could not send verification email. Please try again later.",
+        variant: "destructive",
+      });
     } finally {
       setShowVerifyDialog(false);
     }
@@ -202,9 +243,16 @@ export default function SettingsPage() {
         body: formData,
       });
       if (!response.ok) throw new Error('Import failed');
-      toast.success('Data imported successfully');
+      toast({
+        title: "Success",
+        description: "Your data has been imported successfully.",
+      });
     } catch (error) {
-      toast.error('Failed to import data');
+      toast({
+        title: "Error",
+        description: "Could not import your data. Please ensure the file format is correct.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -212,10 +260,17 @@ export default function SettingsPage() {
     try {
       const response = await fetch('/api/settings/clear-data', { method: 'POST' });
       if (!response.ok) throw new Error('Failed to clear data');
-      toast.success('All transactions cleared successfully');
+      toast({
+        title: "Success",
+        description: "All your data has been cleared successfully.",
+      });
       setShowClearDataDialog(false);
     } catch (error) {
-      toast.error('Failed to clear data');
+      toast({
+        title: "Error",
+        description: "Could not clear your data. Please try again later.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -223,11 +278,18 @@ export default function SettingsPage() {
     try {
       const response = await fetch('/api/settings/delete-account', { method: 'POST' });
       if (!response.ok) throw new Error('Failed to delete account');
-      toast.success('Account deletion initiated. You will be signed out shortly.');
+      toast({
+        title: "Success",
+        description: "Your account will be deleted shortly. You will be redirected...",
+      });
       // Redirect to home page after a short delay
       setTimeout(() => window.location.href = '/', 2000);
     } catch (error) {
-      toast.error('Failed to delete account');
+      toast({
+        title: "Error",
+        description: "Could not delete your account. Please try again later.",
+        variant: "destructive",
+      });
     }
   };
 

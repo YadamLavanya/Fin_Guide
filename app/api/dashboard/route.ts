@@ -231,17 +231,23 @@ export async function GET(): Promise<NextResponse<DashboardData | { error: strin
         name: categories.find(c => c.id === dist.categoryId)?.name || 'Unknown',
         value: dist._sum.amount || 0
       })),
-      recentTransactions: [...expenses, ...incomes]
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-        .map((t): ExpenseRecord | IncomeRecord => ({
-          id: t.id,
-          name: t.description || 'No description',
-          amount: t.amount || 0,
-          type: 'amount' in t ? ('expense' as const) : ('income' as const),
-          category: t.category.name || 'Unknown',
-          date: t.date.toISOString(),
-          paymentMethod: t.paymentMethod.name || 'Unknown'
-        }))
+      recentTransactions: [...expenses.map(t => ({
+        id: t.id,
+        name: t.description || 'No description',
+        amount: t.amount || 0,
+        type: 'expense' as const,
+        category: t.category.name,
+        date: t.date.toISOString(),
+        paymentMethod: t.paymentMethod.name
+      })), ...incomes.map(t => ({
+        id: t.id,
+        name: t.description || 'No description',
+        amount: t.amount || 0,
+        type: 'income' as const,
+        category: t.category.name,
+        date: t.date.toISOString(),
+        paymentMethod: t.paymentMethod.name
+      }))].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
         .slice(0, 5)
     };
 

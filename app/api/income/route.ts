@@ -87,9 +87,18 @@ export async function GET(req: Request) {
           select: { name: true },
         },
         recurring: {
-          include: {
-            pattern: true,
-          },
+          select: {
+            id: true,
+            pattern: {
+              select: {
+                type: true,
+                frequency: true
+              }
+            },
+            startDate: true,
+            endDate: true,
+            nextProcessDate: true
+          }
         },
       },
       orderBy: { date: 'desc' },
@@ -138,13 +147,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid amount' }, { status: 400 });
     }
 
-    // Update the income data with sanitized values
-    const incomeData = {
-      ...data,
-      description,
-      amount,
-    };
-
     // Validate payment method
     const paymentMethodName = data.paymentMethod.replace('_', '_') as PaymentMethodEnum;
     if (!Object.values(PaymentMethodEnum).includes(paymentMethodName)) {
@@ -191,35 +193,32 @@ export async function POST(req: Request) {
       );
     }
 
-    let incomeData: any = {
+    // Create income data object with all necessary fields
+    const incomeData = {
       userId: user.id,
       date: new Date(data.date),
-      description: data.description,
-      amount: parseFloat(data.amount),
+      description,
+      amount,
       categoryId: category.id,
       paymentMethodId: paymentMethod.id,
       notes: data.notes || '',
+      ...(data.recurring && {
+        recurring: {
+          create: {
+            pattern: {
+              create: {
+                type: data.recurring.pattern.type,
+                frequency: data.recurring.pattern.frequency,
+              }
+            },
+            startDate: new Date(data.recurring.startDate),
+            endDate: data.recurring.endDate ? new Date(data.recurring.endDate) : null,
+            lastProcessed: new Date(),
+            nextProcessDate: new Date(data.date),
+          },
+        },
+      }),
     };
-
-    // Handle recurring income if specified
-    if (data.recurring) {
-      const pattern = await prisma.recurringPattern.create({
-        data: {
-          type: data.recurring.pattern.type,
-          frequency: data.recurring.pattern.frequency,
-        },
-      });
-
-      incomeData.recurring = {
-        create: {
-          patternId: pattern.id,
-          startDate: new Date(data.recurring.startDate),
-          endDate: data.recurring.endDate ? new Date(data.recurring.endDate) : null,
-          lastProcessed: new Date(),
-          nextProcessDate: new Date(data.date), // Calculate next process date based on pattern
-        },
-      };
-    }
 
     const income = await prisma.income.create({
       data: incomeData,

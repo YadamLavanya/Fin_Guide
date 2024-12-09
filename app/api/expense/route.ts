@@ -56,35 +56,51 @@ export async function GET(req: Request) {
   const startDate = searchParams.get('startDate');
   const endDate = searchParams.get('endDate');
 
-  const expenses = await prisma.expense.findMany({
-    where: {
-      user: { email: session.user.email },
-      ...(category && { categoryId: category }),
-      ...(startDate && endDate && {
-        date: {
-          gte: new Date(startDate),
-          lte: new Date(endDate),
+  try {
+    const expenses = await prisma.expense.findMany({
+      where: {
+        user: { email: session.user.email },
+        ...(category && { categoryId: category }),
+        ...(startDate && endDate && {
+          date: {
+            gte: new Date(startDate),
+            lte: new Date(endDate),
+          },
+        }),
+        isVoid: false,
+      },
+      include: {
+        category: {
+          select: { name: true, icon: true },
         },
-      }),
-      isVoid: false,
-    },
-    include: {
-      category: {
-        select: { name: true, icon: true },
-      },
-      paymentMethod: {
-        select: { name: true },
-      },
-      recurring: {
-        include: {
-          pattern: true,
+        paymentMethod: {
+          select: { name: true },
+        },
+        recurring: {
+          select: {
+            id: true,
+            pattern: {
+              select: {
+                type: true,
+                frequency: true
+              }
+            },
+            startDate: true,
+            endDate: true,
+            nextProcessDate: true
+          }
         },
       },
-    },
-    orderBy: { date: 'desc' },
-  });
+      orderBy: { date: 'desc' },
+    });
+    
+    return NextResponse.json(expenses);
 
-  return NextResponse.json(expenses);
+    
+  } catch (error) {
+    console.error('Error fetching expenses:', error);
+    return NextResponse.json({ error: 'Failed to fetch expenses' }, { status: 500 });
+  }
 }
 
 // Add validation functions
@@ -166,7 +182,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid payment method' }, { status: 400 });
     }
 
-    // Create the expense
     const expense = await prisma.expense.create({
       data: {
         userId: user.id,
@@ -176,10 +191,31 @@ export async function POST(req: Request) {
         categoryId: category.id,
         paymentMethodId: paymentMethod.id,
         notes: data.notes || '',
+        ...(data.recurring && {
+          recurring: {
+            create: {
+              pattern: {
+                create: {
+                  type: data.recurring.pattern.type,
+                  frequency: data.recurring.pattern.frequency
+                }
+              },
+              startDate: new Date(data.date),
+              endDate: data.recurring.endDate ? new Date(data.recurring.endDate) : null,
+              lastProcessed: new Date(data.date),
+              nextProcessDate: new Date(data.date), // You'll need to calculate this based on frequency
+            }
+          }
+        })
       },
       include: {
         category: true,
         paymentMethod: true,
+        recurring: {
+          include: {
+            pattern: true
+          }
+        }
       },
     });
 

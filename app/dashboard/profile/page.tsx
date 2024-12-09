@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSession } from 'next-auth/react';
-import { toast } from 'sonner';
+import { useToast } from "@/components/ui/use-toast";
 import type { ProfileData } from '@/lib/types';
 import {
   Card,
@@ -26,6 +26,7 @@ import ProfileSkeleton from './loading';
 
 export default function ProfilePage() {
   const { data: session } = useSession();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -44,7 +45,11 @@ export default function ProfilePage() {
       const data = await response.json();
       setProfile(data);
     } catch (error) {
-      toast.error('Failed to load profile');
+      toast({
+        title: "Error",
+        description: "Could not load your profile. Please try again later.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -66,7 +71,11 @@ export default function ProfilePage() {
       const { url } = await response.json();
       return url;
     } catch (error) {
-      toast.error('Failed to upload image');
+      toast({
+        title: "Error",
+        description: "Could not upload your profile picture. Please try again.",
+        variant: "destructive",
+      });
       return null;
     } finally {
       setUploadingImage(false);
@@ -134,9 +143,16 @@ export default function ProfilePage() {
       
       const updatedProfile = await response.json();
       setProfile(updatedProfile);
-      toast.success('Profile updated successfully');
+      toast({
+        title: "Success",
+        description: "Your profile has been updated successfully.",
+      });
     } catch (error) {
-      toast.error('Failed to update profile');
+      toast({
+        title: "Error",
+        description: "Could not update your profile. Please try again later.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -146,7 +162,11 @@ export default function ProfilePage() {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        toast.error('File size must be less than 5MB');
+        toast({
+          title: "Error",
+          description: "File size must be less than 5MB",
+          variant: "destructive",
+        });
         return;
       }
       setImageFile(file);

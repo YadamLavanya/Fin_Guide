@@ -37,11 +37,6 @@ import {
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
-import {
-  Toast,
-  ToastProvider,
-  ToastViewport,
-} from "@/components/ui/toast"
 
 const INCOME_CATEGORIES = {
   Salary: <Briefcase className="w-4 h-4" />,
@@ -283,310 +278,307 @@ export default function IncomePage() {
   };
 
   return (
-    <ToastProvider>
-      <div className="min-h-screen w-full bg-background text-foreground dark:bg-gray-950 dark:text-gray-100">
-        <div className="w-full h-full p-4 md:p-6 lg:p-8">
-          <Card className="h-full flex flex-col">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 shrink-0">
-              <CardTitle className="text-2xl font-bold">Income Tracker</CardTitle>
-              {/* Add Income Dialog */}
-              <Dialog open={isAddIncomeOpen} onOpenChange={setIsAddIncomeOpen}>
-                <DialogTrigger asChild>
-                  <Button>Add Income</Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Add New Income</DialogTitle>
-                    <DialogDescription>
-                      Enter your income details below
-                    </DialogDescription>
-                  </DialogHeader>
-                  <form onSubmit={(e) => {
-                    e.preventDefault();
-                    handleAddIncome(new FormData(e.currentTarget));
-                  }}>
-                    <div className="grid gap-4 py-4">
-                      <Input 
-                        name="description" 
-                        type="text" 
-                        placeholder="Description" 
-                        maxLength={255} // prevent long text injections
-                        pattern="^[a-zA-Z0-9\s\-_.,!?()]+$" // alphanumeric and basic punctuation only
-                        required 
-                      />
-                      <Input 
-                        name="amount" 
-                        type="number" 
-                        placeholder="Amount" 
-                        step="0.01" 
-                        min="0.01" // prevent negative numbers
-                        max="999999999.99" // reasonable maximum
-                        required 
-                      />
-                      <Select name="category">
-                        <SelectTrigger>
-                          <SelectValue placeholder="Category" />
-                        </SelectTrigger>
-                        <SelectContent className='bg-white'>
-                          {Object.entries(INCOME_CATEGORIES).map(([name, icon]) => (
-                            <SelectItem key={name} value={name}>
-                              <span className="flex items-center gap-2">
-                                {icon}
-                                {name}
-                              </span>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Select name="paymentMethod">
-                        <SelectTrigger>
-                          <SelectValue placeholder="Payment Method" />
-                        </SelectTrigger>
-                        <SelectContent className='bg-white'>
-                          {PAYMENT_METHODS.map(({ name, icon }) => (
-                            <SelectItem key={name} value={name}>
-                              <span className="flex items-center gap-2">
-                                {icon}
-                                {name.replace('_', ' ')}
-                              </span>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Input name="date" type="date" required />
-                      
-                      <div className="flex items-center gap-4">
-                        <Switch
-                          id="recurring"
-                          checked={isRecurring}
-                          onCheckedChange={setIsRecurring}
-                        />
-                        <Label htmlFor="recurring">Recurring Income</Label>
-                      </div>
-                      
-                      {isRecurring && (
-                        <div className="grid gap-2">
-                          <Select name="recurringType">
-                            <SelectTrigger>
-                              <SelectValue placeholder="Frequency" />
-                            </SelectTrigger>
-                            <SelectContent className='bg-white'>
-                              <SelectItem value="DAILY">Daily</SelectItem>
-                              <SelectItem value="WEEKLY">Weekly</SelectItem>
-                              <SelectItem value="MONTHLY">Monthly</SelectItem>
-                              <SelectItem value="YEARLY">Yearly</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <Input
-                            name="frequency"
-                            type="number"
-                            placeholder="Every X days/weeks/months/years"
-                          />
-                          <Input
-                            name="endDate"
-                            type="date"
-                            placeholder="End Date (Optional)"
-                          />
-                        </div>
-                      )}
-                    </div>
-                    <DialogFooter>
-                      <Button type="submit" disabled={isSubmitting}>
-                        {isSubmitting ? "Saving..." : "Save"}
-                      </Button>
-                    </DialogFooter>
-                  </form>
-                </DialogContent>
-              </Dialog>
-            </CardHeader>
-
-            <CardContent className="flex-1 flex flex-col gap-4 p-4 overflow-hidden">
-              {/* Search and filter controls */}
-              <div className="flex flex-col sm:flex-row gap-4 shrink-0">
-                <Input
-                  type="text"
-                  placeholder="Search income..."
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
-                  className="max-w-sm"
-                />
-                <Select
-                  value={selectedCategory}
-                  onValueChange={value => setSelectedCategory(value as IncomeCategory | 'all')}
-                >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Category" />
-                  </SelectTrigger>
-                  <SelectContent className='bg-white'>
-                    <SelectItem value="all">All Categories</SelectItem>
-                    {Object.entries(INCOME_CATEGORIES).map(([name, icon]) => (
-                      <SelectItem key={name} value={name}>
-                        <span className="flex items-center gap-2">
-                          {icon}
-                          {name}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Income Table */}
-              <div className="flex-1 min-h-0 rounded-md border">
-                <div className="h-full overflow-auto">
-                  <table className="w-full">
-                    <thead className="bg-muted/50 sticky top-0">
-                      <tr>
-                        {['Date', 'Description', 'Category', 'Amount', 'Payment Method'].map(header => (
-                          <th key={header} className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            {header}
-                          </th>
+    <div className="min-h-screen w-full bg-background text-foreground dark:bg-gray-950 dark:text-gray-100">
+      <div className="w-full h-full p-4 md:p-6 lg:p-8">
+        <Card className="h-full flex flex-col">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 shrink-0">
+            <CardTitle className="text-2xl font-bold">Income Tracker</CardTitle>
+            {/* Add Income Dialog */}
+            <Dialog open={isAddIncomeOpen} onOpenChange={setIsAddIncomeOpen}>
+              <DialogTrigger asChild>
+                <Button>Add Income</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add New Income</DialogTitle>
+                  <DialogDescription>
+                    Enter your income details below
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  handleAddIncome(new FormData(e.currentTarget));
+                }}>
+                  <div className="grid gap-4 py-4">
+                    <Input 
+                      name="description" 
+                      type="text" 
+                      placeholder="Description" 
+                      maxLength={255} // prevent long text injections
+                      pattern="^[a-zA-Z0-9\s\-_.,!?()]+$" // alphanumeric and basic punctuation only
+                      required 
+                    />
+                    <Input 
+                      name="amount" 
+                      type="number" 
+                      placeholder="Amount" 
+                      step="0.01" 
+                      min="0.01" // prevent negative numbers
+                      max="999999999.99" // reasonable maximum
+                      required 
+                    />
+                    <Select name="category">
+                      <SelectTrigger>
+                        <SelectValue placeholder="Category" />
+                      </SelectTrigger>
+                      <SelectContent className='bg-white'>
+                        {Object.entries(INCOME_CATEGORIES).map(([name, icon]) => (
+                          <SelectItem key={name} value={name}>
+                            <span className="flex items-center gap-2">
+                              {icon}
+                              {name}
+                            </span>
+                          </SelectItem>
                         ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredData.map((income, index) => (
-                        <tr
-                          key={income.id}
-                          onClick={() => handleRowClick(income)}
-                          className={`
-                            ${index % 2 === 0 ? 'bg-background' : 'bg-muted/50'}
-                            hover:bg-muted cursor-pointer transition-colors
-                          `}
-                        >
-                          <td className="px-6 py-4">{new Date(income.date).toLocaleDateString()}</td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-2">
-                              {income.recurring && <Repeat className="w-4 h-4" />}
-                              {income.description}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
+                      </SelectContent>
+                    </Select>
+                    <Select name="paymentMethod">
+                      <SelectTrigger>
+                        <SelectValue placeholder="Payment Method" />
+                      </SelectTrigger>
+                      <SelectContent className='bg-white'>
+                        {PAYMENT_METHODS.map(({ name, icon }) => (
+                          <SelectItem key={name} value={name}>
                             <span className="flex items-center gap-2">
-                              {INCOME_CATEGORIES[income.category.name as IncomeCategory]}
-                              {income.category.name}
+                              {icon}
+                              {name.replace('_', ' ')}
                             </span>
-                          </td>
-                          <td className="px-6 py-4 text-success">+${income.amount.toFixed(2)}</td>
-                          <td className="px-6 py-4">
-                            <span className="flex items-center gap-2">
-                              {PAYMENT_METHODS.find(pm => pm.name === income.paymentMethod.name)?.icon}
-                              {income.paymentMethod.name.replace('_', ' ')}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* Edit Dialog */}
-              <Dialog open={isEditIncomeOpen} onOpenChange={setIsEditIncomeOpen}>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Edit Income</DialogTitle>
-                    <DialogDescription>
-                      Modify the income details below
-                    </DialogDescription>
-                  </DialogHeader>
-                  <form onSubmit={(e) => {
-                    e.preventDefault();
-                    handleEditIncome(new FormData(e.currentTarget));
-                  }}>
-                    <div className="grid gap-4 py-4">
-                      <Input 
-                        name="description" 
-                        type="text" 
-                        placeholder="Description" 
-                        maxLength={255} // prevent long text injections
-                        pattern="^[a-zA-Z0-9\s\-_.,!?()]+$" // alphanumeric and basic punctuation only
-                        defaultValue={selectedIncome?.description}
-                        required 
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Input name="date" type="date" required />
+                    
+                    <div className="flex items-center gap-4">
+                      <Switch
+                        id="recurring"
+                        checked={isRecurring}
+                        onCheckedChange={setIsRecurring}
                       />
-                      <Input 
-                        name="amount" 
-                        type="number" 
-                        placeholder="Amount" 
-                        step="0.01" 
-                        min="0.01" // prevent negative numbers
-                        max="999999999.99" // reasonable maximum
-                        defaultValue={selectedIncome?.amount}
-                        required 
-                      />
-                      <Select name="category" defaultValue={selectedIncome?.category.name}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Category" />
-                        </SelectTrigger>
-                        <SelectContent className='bg-white'>
-                          {Object.entries(INCOME_CATEGORIES).map(([name, icon]) => (
-                            <SelectItem key={name} value={name}>
-                              <span className="flex items-center gap-2">
-                                {icon}
-                                {name}
-                              </span>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Select name="paymentMethod" defaultValue={selectedIncome?.paymentMethod.name}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Payment Method" />
-                        </SelectTrigger>
-                        <SelectContent className='bg-white'>
-                          {PAYMENT_METHODS.map(({ name, icon }) => (
-                            <SelectItem key={name} value={name}>
-                              <span className="flex items-center gap-2">
-                                {icon}
-                                {name.replace('_', ' ')}
-                              </span>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Input 
-                        name="date" 
-                        type="date" 
-                        defaultValue={selectedIncome?.date.split('T')[0]}
-                        required 
-                      />
+                      <Label htmlFor="recurring">Recurring Income</Label>
                     </div>
-                    <DialogFooter className="gap-2">
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        onClick={() => {
-                          if (selectedIncome && !isSubmitting) {
-                            handleDeleteIncome(selectedIncome.id);
-                          }
-                        }}
-                        disabled={isSubmitting}
-                      >
-                        Delete
-                      </Button>
-                      <Button type="submit" disabled={isSubmitting}>
-                        {isSubmitting ? "Saving..." : "Save Changes"}
-                      </Button>
-                    </DialogFooter>
-                  </form>
-                </DialogContent>
-              </Dialog>
+                    
+                    {isRecurring && (
+                      <div className="grid gap-2">
+                        <Select name="recurringType">
+                          <SelectTrigger>
+                            <SelectValue placeholder="Frequency" />
+                          </SelectTrigger>
+                          <SelectContent className='bg-white'>
+                            <SelectItem value="DAILY">Daily</SelectItem>
+                            <SelectItem value="WEEKLY">Weekly</SelectItem>
+                            <SelectItem value="MONTHLY">Monthly</SelectItem>
+                            <SelectItem value="YEARLY">Yearly</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Input
+                          name="frequency"
+                          type="number"
+                          placeholder="Every X days/weeks/months/years"
+                        />
+                        <Input
+                          name="endDate"
+                          type="date"
+                          placeholder="End Date (Optional)"
+                        />
+                      </div>
+                    )}
+                  </div>
+                  <DialogFooter>
+                    <Button type="submit" disabled={isSubmitting}>
+                      {isSubmitting ? "Saving..." : "Save"}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </CardHeader>
 
-              {/* Footer */}
-              <div className="flex justify-between items-center mt-auto pt-4 shrink-0">
-                <p className="text-lg font-semibold">
-                  Total Income: ${totalAmount.toFixed(2)}
-                </p>
-                <Button variant="outline" size="sm" onClick={handleExport}>
-                  <Download className="w-4 h-4 mr-2" />
-                  Export
-                </Button>
+          <CardContent className="flex-1 flex flex-col gap-4 p-4 overflow-hidden">
+            {/* Search and filter controls */}
+            <div className="flex flex-col sm:flex-row gap-4 shrink-0">
+              <Input
+                type="text"
+                placeholder="Search income..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="max-w-sm"
+              />
+              <Select
+                value={selectedCategory}
+                onValueChange={value => setSelectedCategory(value as IncomeCategory | 'all')}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Category" />
+                </SelectTrigger>
+                <SelectContent className='bg-white'>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {Object.entries(INCOME_CATEGORIES).map(([name, icon]) => (
+                    <SelectItem key={name} value={name}>
+                      <span className="flex items-center gap-2">
+                        {icon}
+                        {name}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Income Table */}
+            <div className="flex-1 min-h-0 rounded-md border">
+              <div className="h-full overflow-auto">
+                <table className="w-full">
+                  <thead className="bg-muted/50 sticky top-0">
+                    <tr>
+                      {['Date', 'Description', 'Category', 'Amount', 'Payment Method'].map(header => (
+                        <th key={header} className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                          {header}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredData.map((income, index) => (
+                      <tr
+                        key={income.id}
+                        onClick={() => handleRowClick(income)}
+                        className={`
+                          ${index % 2 === 0 ? 'bg-background' : 'bg-muted/50'}
+                          hover:bg-muted cursor-pointer transition-colors
+                        `}
+                      >
+                        <td className="px-6 py-4">{new Date(income.date).toLocaleDateString()}</td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            {income.recurring && <Repeat className="w-4 h-4" />}
+                            {income.description}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="flex items-center gap-2">
+                            {INCOME_CATEGORIES[income.category.name as IncomeCategory]}
+                            {income.category.name}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-success">+${income.amount.toFixed(2)}</td>
+                        <td className="px-6 py-4">
+                          <span className="flex items-center gap-2">
+                            {PAYMENT_METHODS.find(pm => pm.name === income.paymentMethod.name)?.icon}
+                            {income.paymentMethod.name.replace('_', ' ')}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+
+            {/* Edit Dialog */}
+            <Dialog open={isEditIncomeOpen} onOpenChange={setIsEditIncomeOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Edit Income</DialogTitle>
+                  <DialogDescription>
+                    Modify the income details below
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  handleEditIncome(new FormData(e.currentTarget));
+                }}>
+                  <div className="grid gap-4 py-4">
+                    <Input 
+                      name="description" 
+                      type="text" 
+                      placeholder="Description" 
+                      maxLength={255} // prevent long text injections
+                      pattern="^[a-zA-Z0-9\s\-_.,!?()]+$" // alphanumeric and basic punctuation only
+                      defaultValue={selectedIncome?.description}
+                      required 
+                    />
+                    <Input 
+                      name="amount" 
+                      type="number" 
+                      placeholder="Amount" 
+                      step="0.01" 
+                      min="0.01" // prevent negative numbers
+                      max="999999999.99" // reasonable maximum
+                      defaultValue={selectedIncome?.amount}
+                      required 
+                    />
+                    <Select name="category" defaultValue={selectedIncome?.category.name}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Category" />
+                      </SelectTrigger>
+                      <SelectContent className='bg-white'>
+                        {Object.entries(INCOME_CATEGORIES).map(([name, icon]) => (
+                          <SelectItem key={name} value={name}>
+                            <span className="flex items-center gap-2">
+                              {icon}
+                              {name}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select name="paymentMethod" defaultValue={selectedIncome?.paymentMethod.name}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Payment Method" />
+                      </SelectTrigger>
+                      <SelectContent className='bg-white'>
+                        {PAYMENT_METHODS.map(({ name, icon }) => (
+                          <SelectItem key={name} value={name}>
+                            <span className="flex items-center gap-2">
+                              {icon}
+                              {name.replace('_', ' ')}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Input 
+                      name="date" 
+                      type="date" 
+                      defaultValue={selectedIncome?.date.split('T')[0]}
+                      required 
+                    />
+                  </div>
+                  <DialogFooter className="gap-2">
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      onClick={() => {
+                        if (selectedIncome && !isSubmitting) {
+                          handleDeleteIncome(selectedIncome.id);
+                        }
+                      }}
+                      disabled={isSubmitting}
+                    >
+                      Delete
+                    </Button>
+                    <Button type="submit" disabled={isSubmitting}>
+                      {isSubmitting ? "Saving..." : "Save Changes"}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+
+            {/* Footer */}
+            <div className="flex justify-between items-center mt-auto pt-4 shrink-0">
+              <p className="text-lg font-semibold">
+                Total Income: ${totalAmount.toFixed(2)}
+              </p>
+              <Button variant="outline" size="sm" onClick={handleExport}>
+                <Download className="w-4 h-4 mr-2" />
+                Export
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
-      <ToastViewport />
-    </ToastProvider>
+    </div>
   );
 }
