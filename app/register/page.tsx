@@ -1,17 +1,15 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { IconBrandGoogle } from "@tabler/icons-react";
-import { useCreateUserWithEmailAndPassword, useSignInWithGoogle } from "react-firebase-hooks/auth";
-import { auth } from "@/lib/firebaseConfig";
+import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
 export default function SignupForm() {
-  const [createUserWithEmailAndPassword, user, loading, error] = useCreateUserWithEmailAndPassword(auth);
-  const [signInWithGoogle, googleUser, googleError] = useSignInWithGoogle(auth);
+  const [loading, setLoading] = useState(false);
   const [passwordError, setPasswordError] = useState("");
   const [formError, setFormError] = useState("");
   const router = useRouter();
@@ -36,8 +34,12 @@ export default function SignupForm() {
     return errors;
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setLoading(true);
+    setFormError("");
+    setPasswordError("");
+
     const firstname = (e.currentTarget.elements.namedItem("firstname") as HTMLInputElement).value;
     const lastname = (e.currentTarget.elements.namedItem("lastname") as HTMLInputElement).value;
     const email = (e.currentTarget.elements.namedItem("email") as HTMLInputElement).value;
@@ -48,29 +50,60 @@ export default function SignupForm() {
     const passwordErrors = validatePassword(password);
     if (passwordErrors.length > 0) {
       setPasswordError(passwordErrors.join(" "));
-      setTimeout(() => setPasswordError(""), 10000);
+      setLoading(false);
       return;
     }
 
     if (password !== confirmPassword) {
       setPasswordError("Passwords do not match.");
-      setTimeout(() => setPasswordError(""), 10000);
+      setLoading(false);
       return;
     }
 
-    setPasswordError("");
-    setFormError("");
-    createUserWithEmailAndPassword(email, password).catch((err) => {
+    try {
+      // Create user using the signup API
+      const response = await fetch("/api/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          password,
+          firstName: firstname,
+          lastName: lastname
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to create account");
+      }
+
+      // Sign in the user after successful signup
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        throw new Error(result.error);
+      }
+
+      router.push("/dashboard");
+    } catch (err: any) {
       setFormError(err.message);
-      setTimeout(() => setFormError(""), 10000);
-    });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => {
-    if (user || googleUser) {
-      router.push("/dashboard");
+  const handleGoogleSignIn = async () => {
+    try {
+      await signIn("google", { callbackUrl: "/dashboard" });
+    } catch (err: any) {
+      setFormError(err.message);
     }
-  }, [user, googleUser, router]);
+  };
 
   return (
     <div className="max-w-md w-full mx-auto rounded-none md:rounded-2xl p-4 md:p-8 shadow-input bg-white dark:bg-black">
@@ -82,16 +115,16 @@ export default function SignupForm() {
       </p>
 
       <form className="my-8" onSubmit={handleSubmit}>
-      <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 mb-4">
-        <LabelInputContainer className="mb-4">
-          <Label htmlFor="firstname">First Name</Label>
-          <Input id="firstname" placeholder="John" type="text" required />
-        </LabelInputContainer>
-        <LabelInputContainer className="mb-4">
-          <Label htmlFor="lastname">Last Name</Label>
-          <Input id="lastname" placeholder="Doe" type="text" required />
-        </LabelInputContainer>
-      </div>
+        <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 mb-4">
+          <LabelInputContainer className="mb-4">
+            <Label htmlFor="firstname">First Name</Label>
+            <Input id="firstname" placeholder="John" type="text" required />
+          </LabelInputContainer>
+          <LabelInputContainer className="mb-4">
+            <Label htmlFor="lastname">Last Name</Label>
+            <Input id="lastname" placeholder="Doe" type="text" required />
+          </LabelInputContainer>
+        </div>
         <LabelInputContainer className="mb-4">
           <Label htmlFor="email">Email Address</Label>
           <Input id="email" placeholder="someone@example.com" type="email" required />
@@ -111,11 +144,11 @@ export default function SignupForm() {
         <button
           className="bg-gradient-to-br relative group/btn from-black dark:from-zinc-900 dark:to-zinc-900 to-neutral-600 block dark:bg-zinc-800 w-full text-white rounded-md h-10 font-medium shadow-[0px_1px_0px_0px_#ffffff40_inset,0px_-1px_0px_0px_#ffffff40_inset] dark:shadow-[0px_1px_0px_0px_var(--zinc-800)_inset,0px_-1px_0px_0px_var(--zinc-800)_inset]"
           type="submit"
+          disabled={loading}
         >
-          Sign up &rarr;
+          {loading ? "Signing up..." : "Sign up"} &rarr;
           <BottomGradient />
         </button>
-        {error && <p className="text-red-500 mt-2">{error.message}</p>}
 
         <div className="mt-4">
           <Link href="/login">
@@ -129,10 +162,7 @@ export default function SignupForm() {
           <button
             className="relative group/btn flex space-x-2 items-center justify-start px-4 w-full text-black rounded-md h-10 font-medium shadow-input bg-gray-50 dark:bg-zinc-900 dark:shadow-[0px_0px_1px_1px_var(--neutral-800)]"
             type="button"
-            onClick={() => signInWithGoogle().catch((err) => {
-              setFormError(err.message);
-              setTimeout(() => setFormError(""), 10000);
-            })}
+            onClick={handleGoogleSignIn}
           >
             <IconBrandGoogle className="h-4 w-4 text-neutral-800 dark:text-neutral-300" />
             <span className="text-neutral-700 dark:text-neutral-300 text-sm">
@@ -140,7 +170,6 @@ export default function SignupForm() {
             </span>
             <BottomGradient />
           </button>
-          {googleError && <p className="text-red-500 mt-2">{googleError.message}</p>}
         </div>
       </form>
     </div>

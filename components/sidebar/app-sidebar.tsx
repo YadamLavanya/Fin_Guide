@@ -1,5 +1,6 @@
 "use client";
 import { Wallet, Home, Receipt, Settings, Link } from "lucide-react";
+import { useSession } from "next-auth/react";
 
 import {
   Sidebar,
@@ -21,8 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useRouter } from "next/navigation";
-import { auth } from "@/lib/firebaseConfig";
-import { signOut } from "firebase/auth";
+import { signOut } from "next-auth/react";
 
 // Menu items.
 const items = [
@@ -37,6 +37,11 @@ const items = [
     icon: Receipt,
   },
   {
+    title: "Income",
+    url: "/dashboard/income",
+    icon: Wallet,
+  },
+  {
     title: "Settings",
     url: "/dashboard/settings",
     icon: Settings,
@@ -45,10 +50,10 @@ const items = [
 
 export function AppSidebar() {
   const router = useRouter();
-
+  const { data: session } = useSession();
   const handleSignOut = async () => {
     try {
-      await signOut(auth);
+      await signOut();
       router.push("/login");
     } catch (error) {
       console.error("Error signing out: ", error);
@@ -85,7 +90,8 @@ export function AppSidebar() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton>
-              <User /> Username
+              <User />
+              {session?.user?.name || 'User'}
               <ChevronUp className="ml-auto" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
