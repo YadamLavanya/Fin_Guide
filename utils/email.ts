@@ -11,18 +11,19 @@ const transporter = nodemailer.createTransport({
 });
 
 export async function sendBudgetAlert(userEmail: string, spent: number, budget: number) {
-  // Check if user has email notifications enabled
+  // Check if user has email notifications enabled and is verified
   const user = await prisma.user.findUnique({
     where: { email: userEmail },
-    include: {
+    select: {
+      emailVerified: true,
       notifications: {
         where: { type: 'EMAIL' }
       }
     }
   });
 
-  if (!user?.notifications?.[0]?.enabled) {
-    return; // Exit if email notifications are disabled
+  if (!user?.emailVerified || !user?.notifications?.[0]?.enabled) {
+    return; // Exit if email notifications are disabled or user is not verified
   }
 
   await transporter.sendMail({

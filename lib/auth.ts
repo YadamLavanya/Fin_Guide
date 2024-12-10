@@ -30,8 +30,9 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Invalid credentials");
         }
 
+        // Add password salt to the comparison
         const isValid = await bcrypt.compare(
-          credentials.password,
+          credentials.password + user.auth.passwordSalt,
           user.auth.password
         );
 

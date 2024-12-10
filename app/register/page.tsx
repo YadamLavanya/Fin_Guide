@@ -7,6 +7,7 @@ import Link from "next/link";
 import { IconBrandGoogle } from "@tabler/icons-react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import zxcvbn from 'zxcvbn';
 
 export default function SignupForm() {
   const [loading, setLoading] = useState(false);
@@ -15,22 +16,21 @@ export default function SignupForm() {
   const router = useRouter();
 
   const validatePassword = (password: string): string[] => {
+    const result = zxcvbn(password);
     const errors: string[] = [];
-    if (password.length < 8) {
-      errors.push("Password must be at least 8 characters long.");
+    
+    if (result.score < 3) {
+      if (result.feedback.warning) {
+        errors.push(result.feedback.warning);
+      }
+      result.feedback.suggestions.forEach(suggestion => {
+        errors.push(suggestion);
+      });
+      if (errors.length === 0) {
+        errors.push("Password is too weak. Please choose a stronger password.");
+      }
     }
-    if (!/[A-Z]/.test(password)) {
-      errors.push("Password must contain at least one uppercase letter.");
-    }
-    if (!/[a-z]/.test(password)) {
-      errors.push("Password must contain at least one lowercase letter.");
-    }
-    if (!/[0-9]/.test(password)) {
-      errors.push("Password must contain at least one number.");
-    }
-    if (!/[!@#$%^&*]/.test(password)) {
-      errors.push("Password must contain at least one special character.");
-    }
+    
     return errors;
   };
 
@@ -107,6 +107,9 @@ export default function SignupForm() {
 
   return (
     <div className="max-w-md w-full mx-auto rounded-none md:rounded-2xl p-4 md:p-8 shadow-input bg-white dark:bg-black">
+      <Link href="/" className="text-sm text-neutral-600 dark:text-neutral-300 mb-4 block hover:text-neutral-800 dark:hover:text-neutral-100">
+        ← Back to home
+      </Link>
       <h2 className="font-bold text-xl text-neutral-800 dark:text-neutral-200">
         Welcome to Curiopay
       </h2>
@@ -131,11 +134,11 @@ export default function SignupForm() {
         </LabelInputContainer>
         <LabelInputContainer className="mb-4">
           <Label htmlFor="password">Password</Label>
-          <Input id="password" placeholder="••••••••" type="password" required />
+          <Input id="password" placeholder="•••••••" type="password" required />
         </LabelInputContainer>
         <LabelInputContainer className="mb-8">
           <Label htmlFor="confirm-password">Confirm Password</Label>
-          <Input id="confirm-password" placeholder="••••••••" type="password" required />
+          <Input id="confirm-password" placeholder="•••••••" type="password" required />
         </LabelInputContainer>
 
         {passwordError && <p className="text-red-500 mt-2 mb-4">{passwordError}</p>}

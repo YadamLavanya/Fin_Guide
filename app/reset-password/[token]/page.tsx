@@ -1,15 +1,18 @@
-
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { validatePassword } from "@/lib/passwordValidation";
+import debounce from "lodash/debounce";
 
 export default function VerificationPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [passwordStrength, setPasswordStrength] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
@@ -42,12 +45,23 @@ export default function VerificationPage() {
 
   const handleResetPassword = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (password !== confirmPassword) {
-      setError("Passwords do not match");
-      return;
-    }
+    setError("");
+    setMessage("");
+    setLoading(true);
 
     try {
+      // Validate password
+      const validationResult = validatePassword(password);
+      if (!validationResult.isValid) {
+        setError(validationResult.errors.join(" "));
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        setError("Passwords do not match.");
+        return;
+      }
+
       const res = await fetch("/api/auth/reset-password", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -55,14 +69,40 @@ export default function VerificationPage() {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to reset password");
+      }
 
       setMessage("Password reset successful!");
       setTimeout(() => router.push("/login"), 2000);
-    } catch (err) {
-      setError(err.message);
+    } catch (err: any) {
+      setError(err.message || "Something went wrong");
+    } finally {
+      setLoading(false);
     }
   };
+
+  // Create a debounced version of password validation
+  const debouncedValidatePassword = useCallback(
+    debounce((password: string) => {
+      const validationResult = validatePassword(password);
+      setPasswordStrength(validationResult.errors);
+    }, 300),
+    []
+  );
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newPassword = e.target.value;
+    setPassword(newPassword);
+    debouncedValidatePassword(newPassword);
+  };
+
+  // Cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      debouncedValidatePassword.cancel();
+    };
+  }, [debouncedValidatePassword]);
 
   if (type === "email") {
     return (
@@ -88,8 +128,15 @@ export default function VerificationPage() {
             id="password"
             type="password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={handlePasswordChange}
           />
+          {passwordStrength.length > 0 && (
+            <div className="mt-2 text-sm text-amber-600 dark:text-amber-400">
+              {passwordStrength.map((error, index) => (
+                <div key={index}>{error}</div>
+              ))}
+            </div>
+          )}
         </LabelInputContainer>
 
         <LabelInputContainer className="mb-4">
@@ -103,10 +150,11 @@ export default function VerificationPage() {
         </LabelInputContainer>
 
         <button
-          className="bg-gradient-to-br from-black dark:from-zinc-900 to-neutral-600 block w-full text-white rounded-md h-10 font-medium"
+          className="bg-gradient-to-br from-black dark:from-zinc-900 to-neutral-600 block w-full text-white rounded-md h-10 font-medium disabled:opacity-50"
           type="submit"
+          disabled={loading}
         >
-          Reset Password
+          {loading ? "Resetting..." : "Reset Password"}
         </button>
 
         {message && <p className="text-green-500 mt-2">{message}</p>}

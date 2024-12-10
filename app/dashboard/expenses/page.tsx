@@ -90,8 +90,10 @@ interface ExpenseFormData {
   paymentMethod: PaymentMethod;
   date: string;
   recurring?: {
-    type: "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY";
-    frequency: number;
+    pattern: {
+      type: "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY";
+      frequency: number;
+    };
     startDate: string;
     endDate?: string;
   };
@@ -172,18 +174,6 @@ export default function ExpensesPage() {
       return null;
     }
 
-    if (isRecurring) {
-      const frequency = parseInt(formData.get("frequency") as string, 10);
-      if (isNaN(frequency) || frequency <= 0) {
-        toast({
-          title: "Error",
-          description: "Please enter a valid frequency",
-          variant: "destructive",
-        });
-        return null;
-      }
-    }
-
     const data: ExpenseFormData = {
       description: formData.get("description") as string,
       amount,
@@ -193,14 +183,33 @@ export default function ExpensesPage() {
     };
 
     if (isRecurring) {
+      const frequency = parseInt(formData.get("frequency") as string, 10);
+      const recurringType = formData.get("recurringType") as "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY";
+      
+      if (!recurringType) {
+        toast({
+          title: "Error",
+          description: "Please select a recurring frequency type",
+          variant: "destructive",
+        });
+        return null;
+      }
+
+      if (isNaN(frequency) || frequency <= 0) {
+        toast({
+          title: "Error",
+          description: "Please enter a valid frequency",
+          variant: "destructive",
+        });
+        return null;
+      }
+
       data.recurring = {
-        type: formData.get("recurringType") as
-          | "DAILY"
-          | "WEEKLY"
-          | "MONTHLY"
-          | "YEARLY",
-        frequency: parseInt(formData.get("frequency") as string, 10),
-        startDate: formData.get("date") as string,
+        pattern: {
+          type: recurringType,
+          frequency: frequency
+        },
+        startDate: data.date,
         endDate: (formData.get("endDate") as string) || undefined,
       };
     }
@@ -208,10 +217,12 @@ export default function ExpensesPage() {
     return data;
   };
 
-  const handleAddExpense = async (formData: FormData) => {
+  const handleAddExpense = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     if (isSubmitting) return;
     setIsSubmitting(true);
 
+    const formData = new FormData(event.currentTarget);
     const validatedData = validateExpenseForm(formData);
     if (!validatedData) {
       setIsSubmitting(false);
@@ -235,8 +246,8 @@ export default function ExpensesPage() {
         title: "Success",
         description: "Expense added successfully.",
       });
-      fetchExpenses();
-      setIsAddExpenseOpen(false);
+      await fetchExpenses();
+      handleDialogClose();
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : "An unknown error occurred";
@@ -251,10 +262,12 @@ export default function ExpensesPage() {
     }
   };
 
-  const handleEditExpense = async (formData: FormData) => {
+  const handleEditExpense = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     if (isSubmitting) return;
     setIsSubmitting(true);
 
+    const formData = new FormData(event.currentTarget);
     const validatedData = validateExpenseForm(formData);
     if (!validatedData) {
       setIsSubmitting(false);
@@ -276,8 +289,8 @@ export default function ExpensesPage() {
         title: "Success",
         description: "Expense updated successfully.",
       });
-      fetchExpenses();
-      setIsEditExpenseOpen(false);
+      await fetchExpenses();
+      handleDialogClose();
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "An unknown error occurred";
@@ -423,9 +436,9 @@ export default function ExpensesPage() {
               <CardTitle className="text-2xl font-bold">
                 Expense Tracker
               </CardTitle>
-              <Dialog open={isAddExpenseOpen} onOpenChange={handleDialogClose}>
+              <Dialog>
                 <DialogTrigger asChild>
-                  <Button>Add Expense</Button>
+                  <Button className="shrink-0">Add Expense</Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
@@ -434,12 +447,7 @@ export default function ExpensesPage() {
                       Enter the details of your expense below
                     </DialogDescription>
                   </DialogHeader>
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      handleAddExpense(new FormData(e.currentTarget));
-                    }}
-                  >
+                  <form onSubmit={handleAddExpense}>
                     <div className="grid gap-4 py-4">
                       <Input
                         name="description"
@@ -694,12 +702,7 @@ hover:bg-muted cursor-pointer transition-colors
               Modify the expense details below
             </DialogDescription>
           </DialogHeader>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleEditExpense(new FormData(e.currentTarget));
-            }}
-          >
+          <form onSubmit={handleEditExpense}>
             <div className="grid gap-4 py-4">
               <Input
                 name="description"

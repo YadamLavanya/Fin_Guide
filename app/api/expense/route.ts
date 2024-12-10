@@ -137,13 +137,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid amount' }, { status: 400 });
     }
 
-    // Update the expense data with sanitized values
-    const expenseData = {
-      ...data,
-      description,
-      amount,
-    };
-
+    // Get user first
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
     });
@@ -165,10 +159,8 @@ export async function POST(req: Request) {
     const category = userWithCategories?.categories.find(cat => cat.name === data.category);
 
     if (!category) {
-      console.log('Available categories:', userWithCategories?.categories.map(c => c.name));
-      console.log('Requested category:', data.category);
       return NextResponse.json(
-        { error: `Category '${data.category}' not found. Available categories: ${userWithCategories?.categories.map(c => c.name).join(', ')}` },
+        { error: `Category '${data.category}' not found` },
         { status: 404 }
       );
     }
@@ -182,32 +174,35 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid payment method' }, { status: 400 });
     }
 
-    const expense = await prisma.expense.create({
-      data: {
-        userId: user.id,
-        date: new Date(data.date),
-        description: data.description,
-        amount: parseFloat(data.amount),
-        categoryId: category.id,
-        paymentMethodId: paymentMethod.id,
-        notes: data.notes || '',
-        ...(data.recurring && {
-          recurring: {
-            create: {
-              pattern: {
-                create: {
-                  type: data.recurring.pattern.type,
-                  frequency: data.recurring.pattern.frequency
-                }
-              },
-              startDate: new Date(data.date),
-              endDate: data.recurring.endDate ? new Date(data.recurring.endDate) : null,
-              lastProcessed: new Date(data.date),
-              nextProcessDate: new Date(data.date), // You'll need to calculate this based on frequency
-            }
+    // Create expense data object
+    const expenseData = {
+      userId: user.id,
+      date: new Date(data.date),
+      description,
+      amount,
+      categoryId: category.id,
+      paymentMethodId: paymentMethod.id,
+      notes: data.notes || '',
+      ...(data.recurring && data.recurring.pattern && {
+        recurring: {
+          create: {
+            pattern: {
+              create: {
+                type: data.recurring.pattern.type,
+                frequency: data.recurring.pattern.frequency
+              }
+            },
+            startDate: new Date(data.recurring.startDate),
+            endDate: data.recurring.endDate ? new Date(data.recurring.endDate) : null,
+            lastProcessed: new Date(data.recurring.startDate),
+            nextProcessDate: new Date(data.recurring.startDate),
           }
-        })
-      },
+        }
+      })
+    };
+
+    const expense = await prisma.expense.create({
+      data: expenseData,
       include: {
         category: true,
         paymentMethod: true,

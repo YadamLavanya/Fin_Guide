@@ -1,9 +1,11 @@
-
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { hash } from "bcryptjs";
 import crypto from "crypto";
 import { sendPasswordResetEmail } from "@/utils/email";
+import { validatePassword } from '@/lib/passwordValidation';
+import { NextRequest } from "next/server";
+import bcrypt from "bcryptjs";
 
 export async function POST(req: Request) {
   try {
@@ -48,49 +50,65 @@ export async function POST(req: Request) {
   }
 }
 
-export async function PATCH(req: Request) {
+export async function PATCH(req: NextRequest) {
   try {
     const { token, password } = await req.json();
+
+    // Password validation
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      return NextResponse.json(
+        { error: passwordValidation.errors.join(" ") },
+        { status: 400 }
+      );
+    }
+
+    // Hash the incoming token for comparison
     const hashedToken = crypto
       .createHash("sha256")
       .update(token)
       .digest("hex");
 
-    const user = await prisma.user.findFirst({
+    // Find user by hashed reset token
+    const userAuth = await prisma.userAuth.findFirst({
       where: {
-        auth: {
-          passwordResetToken: hashedToken,
-          passwordResetExpires: { gt: new Date() },
-        },
+        passwordResetToken: hashedToken,
+        passwordResetExpires: {
+          gt: new Date()
+        }
       },
-      include: { auth: true },
+      include: {
+        user: true
+      }
     });
 
-    if (!user) {
+    if (!userAuth) {
       return NextResponse.json(
         { error: "Invalid or expired reset token" },
         { status: 400 }
       );
     }
 
-    const hashedPassword = await hash(password, 12);
+    // Generate new salt and hash password
+    const passwordSalt = crypto.randomBytes(16).toString('hex');
+    const hashedPassword = await bcrypt.hash(password + passwordSalt, 10);
 
+    // Update password and clear reset token
     await prisma.userAuth.update({
-      where: { userId: user.id },
+      where: { userId: userAuth.userId },
       data: {
         password: hashedPassword,
+        passwordSalt: passwordSalt,
         passwordResetToken: null,
-        passwordResetExpires: null,
-      },
+        passwordResetExpires: null
+      }
     });
 
-    return NextResponse.json(
-      { message: "Password updated successfully" },
-      { status: 200 }
-    );
+    return NextResponse.json({ message: "Password updated successfully" });
   } catch (error) {
+    console.error("Password reset error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Failed to reset password" },
       { status: 500 }
     );
   }

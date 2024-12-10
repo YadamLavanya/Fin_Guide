@@ -1,4 +1,3 @@
-
 "use client";
 import { useState } from "react";
 import { Label } from "@/components/ui/label";
@@ -10,9 +9,14 @@ export default function ResetPassword() {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setLoading(true);
+    setError("");
+    setMessage("");
+
     try {
       const res = await fetch("/api/auth/reset-password", {
         method: "POST",
@@ -21,11 +25,15 @@ export default function ResetPassword() {
       });
 
       const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to send reset link");
+      }
+      
       setMessage(data.message);
-      setError("");
-    } catch (err) {
-      setError(err.message);
-      setMessage("");
+    } catch (err: any) {
+      setError(err.message || "Something went wrong");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -47,14 +55,17 @@ export default function ResetPassword() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Enter your email"
+            disabled={loading}
+            required
           />
         </LabelInputContainer>
 
         <button
-          className="bg-gradient-to-br from-black dark:from-zinc-900 to-neutral-600 block w-full text-white rounded-md h-10 font-medium"
+          className="bg-gradient-to-br from-black dark:from-zinc-900 to-neutral-600 block w-full text-white rounded-md h-10 font-medium disabled:opacity-50"
           type="submit"
+          disabled={loading}
         >
-          Send Reset Link
+          {loading ? "Sending..." : "Send Reset Link"}
         </button>
 
         <div className="text-sm mt-4">

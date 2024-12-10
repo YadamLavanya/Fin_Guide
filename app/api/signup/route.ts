@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
 import { defaultCurrency, defaultLanguage, defaultTheme } from '@/prisma/default-data';
+import { validatePassword } from '@/lib/passwordValidation';
 
 const defaultExpenseCategories = [
   { name: 'Food', icon: '🛒' },
@@ -124,6 +125,15 @@ export async function POST(req: NextRequest) {
     if (!email?.trim() || !password?.trim() || !firstName?.trim() || !lastName?.trim()) {
       return NextResponse.json(
         { error: "All fields are required." },
+        { status: 400 }
+      );
+    }
+
+    // Password validation
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      return NextResponse.json(
+        { error: passwordValidation.errors.join(" ") },
         { status: 400 }
       );
     }

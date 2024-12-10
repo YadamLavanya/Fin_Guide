@@ -37,6 +37,9 @@ export default function SignInForm() {
 
   return (
     <div className="max-w-md w-full mx-auto rounded-none md:rounded-2xl p-4 md:p-8 shadow-input bg-white dark:bg-black">
+      <Link href="/" className="text-sm text-neutral-600 dark:text-neutral-300 mb-4 block hover:text-neutral-800 dark:hover:text-neutral-100">
+        ← Back to home
+      </Link>
       <h2 className="font-bold text-xl text-neutral-800 dark:text-neutral-200">
         Welcome Back to Curiopay
       </h2>
