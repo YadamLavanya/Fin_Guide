@@ -14,6 +14,13 @@ const paymentMethods = [
 ] as const;
 
 async function main() {
+  // Ensure the users table exists
+  const tableExists = await prisma.$queryRaw`SELECT to_regclass('public.users') IS NOT NULL as exists`;
+  if (!tableExists[0].exists) {
+    console.error("The table `public.users` does not exist in the current database.");
+    process.exit(1);
+  }
+
   // Seed currencies
   await prisma.currency.upsert({
     where: { code: defaultCurrency.code },

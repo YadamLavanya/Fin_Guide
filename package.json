@@ -8,7 +8,10 @@
     "start": "next start",
     "lint": "next lint",
     "db:seed": "prisma db seed",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "db:migrate": "prisma migrate deploy",
+    "db:reset": "prisma migrate reset",
+    "db:setup": "prisma migrate deploy && prisma generate && prisma db seed"
   },
   "dependencies": {
     "@apollo/client": "^3.11.9",
@@ -85,6 +88,7 @@
     "typescript": "^5"
   },
   "prisma": {
+    "schema": "prisma/schema.prisma",
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
   }
 }

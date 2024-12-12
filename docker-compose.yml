@@ -1,0 +1,68 @@
+version: '3.8'
+services:
+  app:
+    image: adhamafis/curiopay:latest
+    build: 
+      context: .
+      target: development
+    ports:
+      - "3000:3000"
+      - "5555:5555"  # Add Prisma Studio port
+    environment:
+      - NODE_ENV=development
+      - DOCKER_ENVIRONMENT=true
+      - PRISMA_SCHEMA_PATH=/app/prisma/schema.prisma
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/curiopay?schema=public
+    env_file: .env
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      sh -c "
+        until nc -z db 5432; do sleep 1; done &&
+        npx prisma migrate dev --name init &&
+        npx prisma generate &&
+        npx prisma db seed &&
+        (npx prisma studio --port 5555 --hostname 0.0.0.0 & echo '✨ Prisma Studio is running at http://localhost:5555') &&
+        npm run dev
+      "
+    networks:
+      - app_network
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: curiopay
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    command: >
+      postgres
+      -c 'listen_addresses=*'
+      -c 'max_connections=1000'
+      -c 'shared_buffers=128MB'
+      -c 'fsync=off'
+      -c 'synchronous_commit=off'
+      -c 'full_page_writes=off'
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 2s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  postgres_data:
+
+networks:
+  app_network:
+    driver: bridge
