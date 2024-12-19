@@ -61,11 +61,6 @@ export function AppSidebar() {
     }
   };
 
-  const handleProfileClick = () => {
-    router.push("/dashboard/profile");
-  }
-
-
   return (
     <Sidebar>
       <SidebarContent>
@@ -100,9 +95,11 @@ export function AppSidebar() {
             side="top"
             className="w-[--radix-popper-anchor-width]"
           >
-            <DropdownMenuItem onClick={handleProfileClick}>
-              <User className="mr-2 h-4 w-4" />
-              <span>Profile</span>
+            <DropdownMenuItem asChild>
+              <Link href="/dashboard/profile">
+                <User className="mr-2 h-4 w-4" />
+                <span>Profile</span>
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={handleSignOut}>
               <LogOut className="mr-2 h-4 w-4" />

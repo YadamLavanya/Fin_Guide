@@ -18,7 +18,8 @@ import {
   Gamepad2Icon,
   BriefcaseIcon
 } from "lucide-react";
-
+import { EmptyDashboard } from './empty-state';
+import { InsightsSection } from '@/components/insights';
 // Category icon mapping
 const CATEGORY_ICONS = {
   'Housing': HomeIcon,
@@ -88,36 +89,63 @@ const TransactionRow = ({ transaction }: {
   );
 };
 
+async function fetchDashboardData(): Promise<DashboardData> {
+  const response = await fetch('/api/dashboard', {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    next: { revalidate: 60 } // Cache for 60 seconds
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch dashboard data: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  if ('error' in data) {
+    throw new Error(data.error);
+  }
+
+  return data;
+}
+
 export default function BudgetDashboard() {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetchDashboardData() {
+    async function loadData() {
       try {
-        const response = await fetch('/api/dashboard');
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to fetch dashboard data');
-        }
-        const data: DashboardData = await response.json();
+        setLoading(true);
+        const data = await fetchDashboardData();
         setDashboardData(data);
-        setError(null);
       } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-        setError(error instanceof Error ? error.message : 'An error occurred');
+        console.error('Error loading dashboard:', error);
+        throw error; // Let error boundary handle it
       } finally {
         setLoading(false);
       }
     }
 
-    fetchDashboardData();
+    loadData();
   }, []);
 
+  if (loading) {
+    return <DashboardSkeleton />;
+  }
 
-  if (error) {
-    return <div>Error: {error}</div>;
+  // Check if dashboard is empty
+  const isDashboardEmpty = !dashboardData || (
+    dashboardData.stats.totalSpent === 0 &&
+    dashboardData.stats.totalIncome === 0 &&
+    dashboardData.expenseCategories.length === 0 &&
+    dashboardData.recentTransactions.length === 0
+  );
+
+  if (isDashboardEmpty) {
+    return <EmptyDashboard />;
   }
 
   const statCards = [
@@ -247,6 +275,11 @@ export default function BudgetDashboard() {
               </Card>
             </div>
           </div>
+
+          {/* Add Insights Section */}
+          <section className='pt-4'>
+            <InsightsSection />
+          </section>
         </Suspense>
       </div>
     </div>

@@ -1,6 +1,7 @@
 "use client";  // Add this at the top since we're using client-side features
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import { InsightsSection } from '@/components/insights';
 import Link from "next/link";
 
 export default function Home() {

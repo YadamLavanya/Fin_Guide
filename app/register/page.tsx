@@ -62,7 +62,7 @@ export default function SignupForm() {
 
     try {
       // Create user using the signup API
-      const response = await fetch("/api/signup", {
+      const response = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

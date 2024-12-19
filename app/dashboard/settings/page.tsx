@@ -28,7 +28,12 @@ import {
   Download,
   Tags,
   Trash2,
-  MoreVertical
+  MoreVertical,
+  Brain,
+  Check,
+  EyeIcon,
+  EyeOffIcon,
+  Link
 } from "lucide-react";
 import {
   Dialog,
@@ -53,16 +58,45 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog"
+import { Label } from "@/components/ui/label";
+import Image from 'next/image';
+
+interface LLMProvider {
+  id: string;
+  name: string;
+  svgPath: string;  // Changed from icon to svgPath
+  description: string;
+  requiresApiKey: boolean;
+  apiKeyPlaceholder?: string;
+  apiKeyLink?: string;
+  extraSettings?: {
+    baseUrl?: boolean;
+    modelOptions?: string[];
+    customModel?: boolean;
+    contextLength?: boolean;
+    temperature?: boolean;
+    systemPrompt?: boolean;
+  };
+}
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
-  const [settings, setSettings] = useState<UserSettings>({
-    currency: 'USD',
-    theme: 'light',
-    notifications: {
-      email: true
+  const [settings, setSettings] = useState<UserSettings>(() => {
+    if (typeof window !== 'undefined') {
+      return {
+        currency: localStorage.getItem('currency') || 'USD',
+        theme: localStorage.getItem('theme') || 'light',
+        notifications: {
+          email: localStorage.getItem('email-notifications') === 'true'
+        }
+      };
     }
+    return {
+      currency: 'USD',
+      theme: 'light',
+      notifications: { email: true }
+    };
   });
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<CategorySettings[]>([]);
@@ -72,6 +106,126 @@ export default function SettingsPage() {
   const [showDeleteAccountDialog, setShowDeleteAccountDialog] = useState(false);
   const [showClearDataDialog, setShowClearDataDialog] = useState(false);
   const [showExportDialog, setShowExportDialog] = useState(false);
+  const [showLLMDialog, setShowLLMDialog] = useState(false);
+  const [selectedLLM, setSelectedLLM] = useState<string>('gpt-4'); // or whatever default
+  const [showApiKey, setShowApiKey] = useState<{[key: string]: boolean}>({});
+  const [apiKeys, setApiKeys] = useState<{[key: string]: string}>(() => {
+    if (typeof window !== 'undefined') {
+      return JSON.parse(localStorage.getItem('llm-api-keys') || '{}');
+    }
+    return {};
+  });
+  const [ollamaSettings, setOllamaSettings] = useState({
+    baseUrl: 'http://localhost:11434',
+    model: 'llama2',
+  });
+  const [showProviderConfig, setShowProviderConfig] = useState(false);
+  const [ollamaConfig, setOllamaConfig] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return JSON.parse(localStorage.getItem('ollama-config') || JSON.stringify({
+        baseUrl: 'http://localhost:11434',
+        model: 'llama2',
+        customModel: '',
+        contextLength: 4096,
+        temperature: 0.7,
+      }));
+    }
+    return {
+      baseUrl: 'http://localhost:11434',
+      model: 'llama2',
+      customModel: '',
+      contextLength: 4096,
+      temperature: 0.7,
+    };
+  });
+  const [defaultLLM, setDefaultLLM] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('default-llm') || 'openai';
+    }
+    return 'openai';
+  });
+
+  const llmProviders: LLMProvider[] = [
+    {
+      id: 'openai',
+      name: 'OpenAI',
+      svgPath: '/openai.svg',
+      description: 'GPT-3.5, GPT-4, and more',
+      requiresApiKey: true,
+      apiKeyPlaceholder: 'sk-...',
+      apiKeyLink: 'https://platform.openai.com/api-keys',
+    },
+    {
+      id: 'anthropic',
+      name: 'Anthropic',
+      svgPath: '/anthropic.svg',
+      description: 'Claude and Claude Instant',
+      requiresApiKey: true,
+      apiKeyPlaceholder: 'sk-ant-...',
+      apiKeyLink: 'https://console.anthropic.com/account/keys',
+    },
+    {
+      id: 'ollama',
+      name: 'Ollama',
+      svgPath: '/ollama.png', // Using PNG for Ollama
+      description: 'Run models locally',
+      requiresApiKey: false,
+      extraSettings: {
+        baseUrl: true,
+        customModel: true,
+        contextLength: true,
+        temperature: true,
+      },
+    },
+    {
+      id: 'google',
+      name: 'Google AI',
+      svgPath: '/google.svg',
+      description: 'PaLM and Gemini',
+      requiresApiKey: true,
+      apiKeyPlaceholder: 'AIza...',
+      apiKeyLink: 'https://makersuite.google.com/app/apikeys',
+    },
+    {
+      id: 'cohere',
+      name: 'Cohere',
+      svgPath: '/cohere.svg',
+      description: 'Command and Generate',
+      requiresApiKey: true,
+      apiKeyPlaceholder: 'co-...',
+      apiKeyLink: 'https://dashboard.cohere.com/api-keys',
+    },
+    {
+      id: 'mistral',
+      name: 'Mistral AI',
+      svgPath: '/mistral.svg',
+      description: 'Mistral-7B and more',
+      requiresApiKey: true,
+      apiKeyPlaceholder: 'mis-...',
+      apiKeyLink: 'https://console.mistral.ai/api-keys/',
+    },
+    {
+      id: 'azure',
+      name: 'Azure OpenAI',
+      svgPath: '/azure.svg',
+      description: 'Azure-hosted models',
+      requiresApiKey: true,
+      apiKeyPlaceholder: 'azure-key',
+      apiKeyLink: 'https://portal.azure.com/',
+    },
+    {
+      id: 'groq',
+      name: 'Groq',
+      svgPath: '/groq.svg',
+      description: 'Ultra-fast inference',
+      requiresApiKey: true,
+      apiKeyPlaceholder: 'gsk_...',
+      apiKeyLink: 'https://console.groq.com/keys',
+      extraSettings: {
+        modelOptions: ['mixtral-8x7b-32768', 'llama2-70b-4096'],
+      },
+    },
+  ];
 
   useEffect(() => {
     fetchSettings();
@@ -119,6 +273,16 @@ export default function SettingsPage() {
       });
 
       if (!response.ok) throw new Error('Failed to update settings');
+      
+      // Update localStorage and state
+      Object.entries(updates).forEach(([key, value]) => {
+        if (key === 'notifications') {
+          localStorage.setItem('email-notifications', value.email.toString());
+        } else {
+          localStorage.setItem(key, value as string);
+        }
+      });
+      
       setSettings(newSettings);
       toast({
         title: "Success",
@@ -291,6 +455,51 @@ export default function SettingsPage() {
         variant: "destructive",
       });
     }
+  };
+
+  const handleLLMSelection = async (llmId: string) => {
+    try {
+      setSelectedLLM(llmId);
+      // Add your API call here to update the LLM preference
+      toast({
+        title: "Success",
+        description: "LLM preference updated successfully.",
+      });
+      setShowLLMDialog(false);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update LLM preference.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleApiKeyChange = (providerId: string, value: string) => {
+    const newApiKeys = { ...apiKeys, [providerId]: value };
+    setApiKeys(newApiKeys);
+    localStorage.setItem('llm-api-keys', JSON.stringify(newApiKeys));
+  };
+
+  const handleOllamaSettingsChange = (settings: typeof ollamaSettings) => {
+    setOllamaSettings(settings);
+    localStorage.setItem('ollama-settings', JSON.stringify(settings));
+  };
+
+  const handleOllamaConfigChange = (updates: Partial<typeof ollamaConfig>) => {
+    const newConfig = { ...ollamaConfig, ...updates };
+    setOllamaConfig(newConfig);
+    localStorage.setItem('ollama-config', JSON.stringify(newConfig));
+  };
+
+  // Add this function to handle default LLM change
+  const handleDefaultLLMChange = (llmId: string) => {
+    setDefaultLLM(llmId);
+    localStorage.setItem('default-llm', llmId);
+    toast({
+      title: "Success",
+      description: "Default LLM updated successfully.",
+    });
   };
 
   return (
@@ -489,6 +698,45 @@ export default function SettingsPage() {
               </Dialog>
             </section> */}
 
+            {/* Add this new section before Data Management */}
+            <section>
+              <h2 className="text-lg font-semibold mb-4">AI Settings</h2>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <Brain className="w-4 h-4" />
+                      <label className="font-medium">Language Model</label>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Choose your preferred AI language model
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <Select value={defaultLLM} onValueChange={handleDefaultLLMChange}>
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Choose default LLM" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {llmProviders.map((provider) => (
+                          <SelectItem key={provider.id} value={provider.id}>
+                            {provider.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowLLMDialog(true)}
+                      className="flex items-center gap-2"
+                    >
+                      Configure
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </section>
+
             {/* Data Management */}
             <section>
               <h2 className="text-lg font-semibold mb-4">Data Management</h2>
@@ -630,6 +878,209 @@ export default function SettingsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <Dialog open={showLLMDialog} onOpenChange={setShowLLMDialog}>
+        <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Choose Language Model</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+            {llmProviders.map((provider) => (
+              <div
+                key={provider.id}
+                className={`relative cursor-pointer group`}
+                onClick={() => {
+                  setSelectedLLM(provider.id);
+                  setShowProviderConfig(true);
+                }}
+              >
+                <div className={`
+                  p-4 rounded-lg border-2 
+                  ${selectedLLM === provider.id ? 'border-primary' : 'border-border'}
+                  hover:border-primary transition-colors
+                  aspect-square flex flex-col items-center justify-center gap-2
+                  bg-card
+                `}>
+                  <div className="w-12 h-12 relative">
+                    <Image
+                      src={provider.svgPath}
+                      alt={provider.name}
+                      fill
+                      className="object-contain"
+                    />
+                  </div>
+                  <h3 className="font-semibold">{provider.name}</h3>
+                  <p className="text-sm text-muted-foreground text-center">
+                    {provider.description}
+                  </p>
+                  {selectedLLM === provider.id && (
+                    <div className="absolute top-2 right-2">
+                      <Check className="w-5 h-5 text-primary" />
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showProviderConfig} onOpenChange={setShowProviderConfig}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Configure {llmProviders.find(p => p.id === selectedLLM)?.name}</DialogTitle>
+          </DialogHeader>
+          {selectedLLM === 'ollama' ? (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Base URL</Label>
+                <Input
+                  value={ollamaConfig.baseUrl}
+                  onChange={(e) => handleOllamaConfigChange({ baseUrl: e.target.value })}
+                  placeholder="http://localhost:11434"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Model</Label>
+                <Input
+                  value={ollamaConfig.customModel}
+                  onChange={(e) => handleOllamaConfigChange({ customModel: e.target.value })}
+                  placeholder="Enter model name (e.g., llama2, codellama)"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Context Length</Label>
+                <Input
+                  type="number"
+                  value={ollamaConfig.contextLength}
+                  onChange={(e) => handleOllamaConfigChange({ contextLength: parseInt(e.target.value) })}
+                  min={1}
+                  max={32768}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Temperature</Label>
+                <Input
+                  type="number"
+                  value={ollamaConfig.temperature}
+                  onChange={(e) => handleOllamaConfigChange({ temperature: parseFloat(e.target.value) })}
+                  min={0}
+                  max={2}
+                  step={0.1}
+                />
+              </div>
+            </div>
+          ) : selectedLLM === 'groq' ? (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Model</Label>
+                <div className="space-y-2">
+                  <Select
+                    value={apiKeys[`${selectedLLM}-model`] || 'mixtral-8x7b-32768'}
+                    onValueChange={(value) => handleApiKeyChange(`${selectedLLM}-model`, value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select model" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="custom">Custom Model</SelectItem>
+                      {llmProviders.find(p => p.id === selectedLLM)?.extraSettings?.modelOptions?.map(model => (
+                        <SelectItem key={model} value={model}>
+                          {model}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {apiKeys[`${selectedLLM}-model`] === 'custom' && (
+                    <Input
+                      placeholder="Enter custom model name"
+                      value={apiKeys[`${selectedLLM}-custom-model`] || ''}
+                      onChange={(e) => handleApiKeyChange(`${selectedLLM}-custom-model`, e.target.value)}
+                    />
+                  )}
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>API Key</Label>
+                  <a
+                    href={llmProviders.find(p => p.id === selectedLLM)?.apiKeyLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-primary hover:underline flex items-center gap-1"
+                  >
+                    Get API Key <Link className="h-3 w-3" />
+                  </a>
+                </div>
+                <div className="relative">
+                  <Input
+                    type={showApiKey[selectedLLM] ? 'text' : 'password'}
+                    value={apiKeys[selectedLLM] || ''}
+                    onChange={(e) => handleApiKeyChange(selectedLLM, e.target.value)}
+                    placeholder={llmProviders.find(p => p.id === selectedLLM)?.apiKeyPlaceholder}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="absolute right-2 top-1/2 -translate-y-1/2"
+                    onClick={() => setShowApiKey(prev => ({
+                      ...prev,
+                      [selectedLLM]: !prev[selectedLLM]
+                    }))}
+                  >
+                    {showApiKey[selectedLLM] ? (
+                      <EyeOffIcon className="h-4 w-4" />
+                    ) : (
+                      <EyeIcon className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>API Key</Label>
+                  {llmProviders.find(p => p.id === selectedLLM)?.apiKeyLink && (
+                    <a
+                      href={llmProviders.find(p => p.id === selectedLLM)?.apiKeyLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-primary hover:underline flex items-center gap-1"
+                    >
+                      Get API Key <Link className="h-3 w-3" />
+                    </a>
+                  )}
+                </div>
+                <div className="relative">
+                  <Input
+                    type={showApiKey[selectedLLM] ? 'text' : 'password'}
+                    value={apiKeys[selectedLLM] || ''}
+                    onChange={(e) => handleApiKeyChange(selectedLLM, e.target.value)}
+                    placeholder={llmProviders.find(p => p.id === selectedLLM)?.apiKeyPlaceholder}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="absolute right-2 top-1/2 -translate-y-1/2"
+                    onClick={() => setShowApiKey(prev => ({
+                      ...prev,
+                      [selectedLLM]: !prev[selectedLLM]
+                    }))}
+                  ></Button>
+                    <Button>
+                    {showApiKey[selectedLLM] ? (
+                      <EyeOffIcon className="h-4 w-4" />
+                    ) : (
+                      <EyeIcon className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
