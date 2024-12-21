@@ -5,19 +5,16 @@ import { prisma } from '@/lib/prisma';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import type { DashboardData } from '@/types/dashboard';
 
-// Add utility function for Prisma error messages
 const getPrismaErrorMessage = (errorCode: string): string => {
   const errorMessages: Record<string, string> = {
     P2002: 'A unique constraint would be violated.',
     P2014: 'The change you are trying to make would violate data integrity.',
     P2003: 'Foreign key constraint failed.',
-    // Add more error codes as needed
     DEFAULT: 'An unknown database error occurred.'
   };
   return errorMessages[errorCode] || errorMessages.DEFAULT;
 };
 
-// Add utility function for date ranges
 const getDashboardDateRanges = () => {
   const now = new Date();
   const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -86,7 +83,10 @@ export async function GET(): Promise<NextResponse> {
         where: { email: session.user.email },
         include: {
           preferences: {
-            include: { currency: true }
+            select: {
+              monthlyBudget: true,
+              currency: true
+            }
           }
         }
       });

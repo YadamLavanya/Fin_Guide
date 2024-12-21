@@ -16,7 +16,8 @@ import {
   UtensilsCrossedIcon,
   LightbulbIcon,
   Gamepad2Icon,
-  BriefcaseIcon
+  BriefcaseIcon,
+  AlertCircleIcon
 } from "lucide-react";
 import { EmptyDashboard } from './empty-state';
 import { InsightsSection } from '@/components/insights';
@@ -119,11 +120,13 @@ export default function BudgetDashboard() {
     async function loadData() {
       try {
         setLoading(true);
+        setError(null);
         const data = await fetchDashboardData();
         setDashboardData(data);
-      } catch (error) {
-        console.error('Error loading dashboard:', error);
-        throw error; // Let error boundary handle it
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to load dashboard data';
+        setError(errorMessage);
+        console.error('Dashboard loading error:', errorMessage);
       } finally {
         setLoading(false);
       }
@@ -134,6 +137,24 @@ export default function BudgetDashboard() {
 
   if (loading) {
     return <DashboardSkeleton />;
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] p-4">
+        <div className="text-destructive mb-4">
+          <AlertCircleIcon className="w-12 h-12" />
+        </div>
+        <h2 className="text-xl font-semibold mb-2">Error Loading Dashboard</h2>
+        <p className="text-muted-foreground text-center">{error}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="mt-4 px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
+        >
+          Retry
+        </button>
+      </div>
+    );
   }
 
   // Check if dashboard is empty

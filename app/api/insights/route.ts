@@ -5,6 +5,7 @@ import { generateLLMPrompt } from '@/lib/llm/utils';
 import type { TransactionData, InsightData } from '@/lib/llm/types';
 import { prisma } from '@/lib/prisma';
 import { llmLogger } from '@/lib/llm/logging';
+import { authOptions } from '@/lib/auth';
 
 // Add basic insights generation for when LLM is not available
 function generateBasicInsights(transactionData: TransactionData) {
@@ -215,56 +216,45 @@ function validateLLMResponse(response: any): boolean {
 export async function GET(req: Request) {
   const startTime = Date.now();
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get provider info from headers
-    const llmProvider = (req.headers.get('x-llm-provider') || 'groq') as SupportedProvider;
+    // Get LLM settings from request headers
+    const llmProvider = (req.headers.get('x-llm-provider') || 'groq') as string;
     const apiKey = req.headers.get('x-api-key') || '';
     const llmConfig = req.headers.get('x-llm-config');
 
     // Initialize provider config
-    let providerConfig: ProviderConfig = { apiKey };
+    let providerConfig: any = { apiKey };
 
     // Parse additional config if provided
     if (llmConfig) {
       try {
         const parsedConfig = JSON.parse(llmConfig);
-        
-        // For Ollama, ensure we have proper config structure
-        if (llmProvider === 'ollama') {
-          providerConfig = {
-            apiKey: '', // Ollama doesn't need API key
-            baseUrl: parsedConfig.baseUrl || 'http://localhost:11434',
-            model: parsedConfig.customModel || parsedConfig.model || 'llama2',
-            contextLength: parsedConfig.contextLength || 4096,
-            temperature: parsedConfig.temperature || 0.7
-          };
-        } else {
-          // For other providers, merge with default config
-          providerConfig = {
-            ...providerConfig,
-            ...parsedConfig
-          };
-        }
+        providerConfig = { ...providerConfig, ...parsedConfig };
       } catch (e) {
         console.error('Failed to parse LLM config:', e);
       }
     }
 
-    // Fetch user data first
-    const user = await prisma.user.findUnique({
+    // Simplified user query with only existing fields
+    const user = await prisma.user.findUniqueOrThrow({
       where: { email: session.user.email },
       include: {
-        preferences: true,
+        preferences: {
+          select: {
+            monthlyBudget: true,
+            currency: true
+          }
+        },
         expenses: {
           where: { 
             isVoid: false,
             date: {
-              gte: new Date(new Date().setDate(1)), // Start of current month
-              lt: new Date(new Date().setMonth(new Date().getMonth() + 1)) // Start of next month
+              gte: new Date(new Date().setDate(1)),
+              lt: new Date(new Date().setMonth(new Date().getMonth() + 1))
             }
           },
           include: { category: true }
@@ -286,10 +276,6 @@ export async function GET(req: Request) {
         }
       }
     });
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
 
     // Initialize transactionData before checking apiKey
     const previousMonthStart = new Date(new Date().setMonth(new Date().getMonth() - 1));
@@ -358,7 +344,7 @@ export async function GET(req: Request) {
     // Generate computed insights first
     const computedInsights = generateComprehensiveInsights(transactionData);
 
-    // Determine if we should use LLM
+    // Determine if we should use LLM based on headers
     const shouldUseLLM = llmProvider === 'ollama' || (llmProvider !== 'ollama' && apiKey);
 
     if (shouldUseLLM) {

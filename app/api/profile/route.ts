@@ -3,8 +3,6 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
-
-
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
   
@@ -13,36 +11,53 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // First, get the user with basic relations
     const user = await prisma.user.findUnique({
       where: { 
         id: session.user.id,
         isDeleted: false 
       },
       include: {
-        contactInfo: true,
-        preferences: {
-          include: {
-            currency: true,
-          },
+        contactInfo: {
+          select: {
+            phone: true,
+            avatarUrl: true
+          }
         },
-      },
+        preferences: {
+          select: {
+            monthlyBudget: true,
+            currency: {
+              select: {
+                code: true
+              }
+            },
+            language: {
+              select: {
+                code: true
+              }
+            },
+            theme: {
+              select: {
+                name: true
+              }
+            }
+          }
+        }
+      }
     });
 
     if (!user) {
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
     }
 
-    // Separately calculate stats to avoid JOIN complexity
-    const stats = await prisma.$transaction([
+    // Fetch aggregate statistics
+    const [expenseStats, categoryCount] = await Promise.all([
       prisma.expense.aggregate({
         where: {
           userId: session.user.id,
           isVoid: false,
         },
-        _sum: {
-          amount: true,
-        },
+        _sum: { amount: true },
       }),
       prisma.category.count({
         where: {
@@ -52,30 +67,32 @@ export async function GET(req: NextRequest) {
       }),
     ]);
 
-    // Construct the safe profile response
-    const safeProfile = {
+    // Construct safe profile response
+    const profile = {
       id: user.id,
+      email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
-      email: user.email,
-      createdAt: user.createdAt,
-      contactInfo: user.contactInfo ? {
+      contact: user.contactInfo ? {
         phone: user.contactInfo.phone,
         avatarUrl: user.contactInfo.avatarUrl,
-      } : undefined,
-      preferences: user.preferences ? {
-        monthlyBudget: user.preferences.monthlyBudget,
-        currency: user.preferences.currency,
-      } : undefined,
-      stats: {
-        totalExpenses: stats[0]._sum.amount || 0,
-        categoriesCount: stats[1] || 0,
+      } : null,
+      preferences: {
+        currency: user.preferences?.currency.code,
+        language: user.preferences?.language.code,
+        theme: user.preferences?.theme.name,
+        monthlyBudget: user.preferences?.monthlyBudget,
       },
+      stats: {
+        totalExpenses: expenseStats._sum.amount || 0,
+        categoryCount: categoryCount,
+      },
+      createdAt: user.createdAt,
     };
 
-    return NextResponse.json(safeProfile);
+    return NextResponse.json(profile);
   } catch (error) {
-    console.error('Error fetching profile:', error);
+    console.error('Profile fetch error:', error);
     return NextResponse.json(
       { error: 'Failed to load profile' }, 
       { status: 500 }
@@ -90,85 +107,57 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { 
-    firstName, 
-    lastName, 
-    contactInfo,
-    preferences,
-  } = await req.json();
-
   try {
-    const transaction = await prisma.$transaction([
-      // Update user without email
-      prisma.user.update({
+    const data = await req.json();
+    
+    if (!data.firstName) {
+      return NextResponse.json({ error: 'First name is required' }, { status: 400 });
+    }
+    
+    const result = await prisma.$transaction(async (tx) => {
+      // Update basic user info
+      const user = await tx.user.update({
         where: { id: session.user.id },
         data: { 
-          firstName,
-          lastName,
+          firstName: data.firstName,
+          lastName: data.lastName || null,
         }
-      }),
+      });
       
-      // Update contact info
-      prisma.userContact.upsert({
-        where: { userId: session.user.id },
-        create: {
-          userId: session.user.id,
-          firstName,
-          lastName,
-          phone: contactInfo.phone,
-          avatarUrl: contactInfo.avatarUrl,
-        },
-        update: {
-          phone: contactInfo.phone,
-          avatarUrl: contactInfo.avatarUrl,
-        },
-      }),
-
-      // Update preferences
-      prisma.userPreference.update({
-        where: { userId: session.user.id },
-        data: { 
-          monthlyBudget: preferences.monthlyBudget,
-        },
-      }),
-    ]);
-
-    const updatedProfile = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      include: {
-        contactInfo: true,
-        preferences: {
-          include: {
-            currency: true
-          }
-        },
-        notifications: true,
-      },
-    });
-
-    // Fetch updated stats
-    const stats = await prisma.expense.aggregate({
-      where: {
-        userId: session.user.id,
-        isVoid: false,
-      },
-      _sum: {
-        amount: true,
-      },
-      _count: {
-        categoryId: true,
-      },
-    });
-
-    return NextResponse.json({
-      ...updatedProfile,
-      stats: {
-        totalExpenses: stats._sum.amount || 0,
-        categoriesCount: stats._count.categoryId || 0,
+      // Update contact info if provided
+      if (data.contact) {
+        await tx.userContact.upsert({
+          where: { userId: user.id },
+          create: {
+            userId: user.id,
+            firstName: data.firstName,
+            lastName: data.lastName || null,
+            phone: data.contact.phone || null,
+            avatarUrl: data.contact.avatarUrl || null,
+          },
+          update: {
+            phone: data.contact.phone || null,
+            avatarUrl: data.contact.avatarUrl || null,
+          },
+        });
       }
+
+      // Update monthlyBudget if provided
+      if (typeof data.preferences?.monthlyBudget === 'number') {
+        await tx.userPreference.update({
+          where: { userId: user.id },
+          data: { 
+            monthlyBudget: data.preferences.monthlyBudget,
+          },
+        });
+      }
+
+      return user;
     });
+
+    return NextResponse.json({ success: true, userId: result.id });
   } catch (error) {
-    console.error('Transaction failed:', error);
+    console.error('Profile update error:', error);
     return NextResponse.json(
       { error: 'Failed to update profile' },
       { status: 500 }
