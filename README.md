@@ -75,6 +75,9 @@ With **Curiopay**, users can:
 - **Mobile App**: A mobile version of the app is in the planning phase for better on-the-go financial management.
 
 ---
+## Screenshot
+![Screenshot Description](https://i.imgur.com/8INTEn5.png)
+
 
 ## Installation
 
