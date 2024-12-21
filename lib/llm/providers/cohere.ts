@@ -27,14 +27,16 @@ export class CohereProvider implements LLMProvider {
         max_tokens: 500,
         temperature: 0.7,
         format: 'json',
-        stop_sequences: ["}"]  // Ensure clean JSON cutoff
+        stop_sequences: ["}"],
+        truncate: 'END'
       });
 
       const generatedText = response.generations[0].text.trim();
       
-      // Enhanced JSON extraction
+      // More robust JSON extraction
       let jsonStr = generatedText;
       if (!generatedText.startsWith('{')) {
+        // Look for JSON-like content between curly braces
         const jsonMatch = generatedText.match(/\{[\s\S]*\}/);
         if (!jsonMatch) {
           throw new Error('No valid JSON found in response');
@@ -42,14 +44,14 @@ export class CohereProvider implements LLMProvider {
         jsonStr = jsonMatch[0];
       }
 
-      // Clean the JSON string
-      jsonStr = jsonStr.replace(/\n/g, ' ')
-                      .replace(/\r/g, ' ')
-                      .replace(/\t/g, ' ')
-                      .replace(/\s+/g, ' ')
-                      .trim();
-      
-      // Ensure the JSON string is properly terminated
+      // Clean and normalize the JSON string
+      jsonStr = jsonStr
+        .replace(/[\u{0080}-\u{FFFF}]/gu, '') // Remove non-ASCII characters
+        .replace(/\\[rnt]/g, ' ') // Replace escape sequences
+        .replace(/\s+/g, ' ') // Normalize whitespace
+        .trim();
+
+      // Ensure proper JSON structure
       if (!jsonStr.endsWith('}')) {
         jsonStr += '}';
       }
@@ -58,17 +60,27 @@ export class CohereProvider implements LLMProvider {
       try {
         parsedResponse = JSON.parse(jsonStr);
       } catch (parseError) {
-        llmLogger.log({
-          timestamp: new Date().toISOString(),
-          provider: 'cohere',
-          prompt,
-          error: parseError,
-          response: jsonStr,
-          duration: Date.now() - startTime,
-          success: false,
-          level: 'error'
-        });
-        throw new Error('Failed to parse LLM response as JSON');
+        // Try to fix common JSON issues
+        jsonStr = jsonStr
+          .replace(/,\s*}/g, '}') // Remove trailing commas
+          .replace(/([{,]\s*)"?(\w+)"?\s*:/g, '$1"$2":') // Fix unquoted keys
+          .replace(/:\s*'([^']*)'/g, ':"$1"'); // Replace single quotes with double quotes
+
+        try {
+          parsedResponse = JSON.parse(jsonStr);
+        } catch (finalError) {
+          llmLogger.log({
+            timestamp: new Date().toISOString(),
+            provider: 'cohere',
+            prompt,
+            error: finalError,
+            response: jsonStr,
+            duration: Date.now() - startTime,
+            success: false,
+            level: 'error'
+          });
+          throw new Error('Failed to parse LLM response as JSON');
+        }
       }
 
       // Ensure required fields exist

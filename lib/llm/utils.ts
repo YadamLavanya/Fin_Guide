@@ -1,11 +1,19 @@
 import { TransactionData } from './types';
 
 export function generateLLMPrompt(transactionData: TransactionData) {
-  return `Based on this financial data, provide a light-hearted commentary and some personalized financial tips. Return a JSON response:
+  return `Analyze this financial data and provide a light-hearted commentary with some personalized financial tips. You must respond with ONLY a valid JSON object in this exact format:
 
 {
-  "commentary": ["2-3 friendly observations about spending habits"],
-  "tips": ["2-3 actionable financial tips"]
+  "commentary": [
+    "first observation about spending",
+    "second observation about spending",
+    "third observation about spending"
+  ],
+  "tips": [
+    "first actionable tip",
+    "second actionable tip",
+    "third actionable tip"
+  ]
 }
 
 Monthly Summary:
