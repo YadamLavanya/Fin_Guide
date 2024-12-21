@@ -1,8 +1,15 @@
 "use client";  // Add this at the top since we're using client-side features
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { InsightsSection } from '@/components/insights';
 import Link from "next/link";
+import { ShimmerButton } from "@/components/ui/shimmer-button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 export default function Home() {
   return (
@@ -62,16 +69,18 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="flex gap-4 justify-center"
+            className="flex flex-col sm:flex-row gap-4 justify-center"
           >
-            <Link href="/register">
-              <Button className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white text-lg px-8 py-6">
+            <Link href="/register" className="w-full sm:w-auto">
+              <ShimmerButton className="w-full sm:w-auto bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white text-lg px-8 py-6">
                 Start Tracking Free
-              </Button>
+              </ShimmerButton>
             </Link>
-            <Button variant="outline" className="text-gray-700 border-slate-600 text-lg px-8 py-6">
-              View Features
-            </Button>
+            <Link href="/features" className="w-full sm:w-auto">
+              <ShimmerButton className="w-full sm:w-auto border-2 border-slate-600 hover:bg-slate-50 text-gray-700 text-lg px-8 py-6">
+                View Features
+              </ShimmerButton>
+            </Link>
           </motion.div>
         </div>
       </section>
@@ -98,11 +107,16 @@ export default function Home() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.2 }}
-              whileHover={{ scale: 1.05 }}
-              className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow"
+              whileHover={{ scale: 1.02 }}
             >
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">{feature.title}</h3>
-              <p className="text-gray-600">{feature.description}</p>
+              <Card className="h-full transition-all hover:shadow-lg">
+                <CardHeader>
+                  <CardTitle className="text-xl text-gray-900">{feature.title}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription className="text-gray-600">{feature.description}</CardDescription>
+                </CardContent>
+              </Card>
             </motion.div>
           ))}
         </div>
