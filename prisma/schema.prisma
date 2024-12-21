@@ -109,6 +109,8 @@ model UserPreference {
   languageId   String
   themeId      String
   monthlyBudget Float?    @default(0)
+  defaultLLM    String?
+  llmApiKeys    Json?    // Stores API keys for different providers
   user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   currency     Currency  @relation(fields: [currencyId], references: [id])
   language     Language  @relation(fields: [languageId], references: [id])

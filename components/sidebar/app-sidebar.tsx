@@ -1,7 +1,8 @@
 "use client";
-import { Wallet, Home, Receipt, Settings, Link as LinkIcon } from "lucide-react";
+import { Wallet, Home, Receipt, Settings, AlertCircle, Bot, Link as LinkIcon } from "lucide-react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import Image from "next/image";
 
 import {
   Sidebar,
@@ -43,10 +44,20 @@ const items = [
     icon: Wallet,
   },
   {
+    title: "Chat With AI Assistant",
+    url: "/dashboard/chat",
+    icon: Bot,
+  },
+  {
+    title: "Report Issue",
+    url: "/dashboard/report",
+    icon: AlertCircle,
+  },
+  {
     title: "Settings",
     url: "/dashboard/settings",
     icon: Settings,
-  },
+  }
 ];
 
 export function AppSidebar() {
@@ -61,16 +72,13 @@ export function AppSidebar() {
     }
   };
 
-  const handleProfileClick = () => {
-    router.push("/dashboard/profile");
-  }
-
-
   return (
     <Sidebar>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Application</SidebarGroupLabel>
+            <SidebarGroupLabel >
+              <h1>CurioPay</h1>
+            </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
@@ -100,9 +108,11 @@ export function AppSidebar() {
             side="top"
             className="w-[--radix-popper-anchor-width]"
           >
-            <DropdownMenuItem onClick={handleProfileClick}>
-              <User className="mr-2 h-4 w-4" />
-              <span>Profile</span>
+            <DropdownMenuItem asChild>
+              <Link href="/dashboard/profile">
+                <User className="mr-2 h-4 w-4" />
+                <span>Profile</span>
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={handleSignOut}>
               <LogOut className="mr-2 h-4 w-4" />

@@ -1,9 +1,9 @@
 // components/signin/signin-form.tsx
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -12,6 +12,17 @@ import { IconBrandGoogle } from "@tabler/icons-react";
 export default function SignInForm() {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const { data: session, status } = useSession();
+
+  useEffect(() => {
+    if (session) {
+      router.push("/dashboard");
+    }
+  }, [session, router]);
+
+  if (status === "loading") {
+    return null;
+  }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -22,17 +33,26 @@ export default function SignInForm() {
       e.currentTarget.elements.namedItem("password") as HTMLInputElement
     ).value;
 
-    const result = await signIn("credentials", {
-      redirect: false,
-      email,
-      password,
-    });
+    try {
+      const result = await signIn("credentials", {
+        redirect: false,
+        email,
+        password,
+        callbackUrl: "/dashboard"
+      });
 
-    if (result?.error) {
-      setError(result.error);
-    } else {
-      router.push("/dashboard");
+      if (result?.error) {
+        setError(result.error);
+      } else if (result?.url) {
+        router.push(result.url);
+      }
+    } catch (error) {
+      setError("An error occurred during sign in");
     }
+  };
+
+  const handleGoogleSignIn = () => {
+    signIn("google", { callbackUrl: "/dashboard" });
   };
 
   return (
@@ -89,7 +109,7 @@ export default function SignInForm() {
           <button
             className="relative group/btn flex space-x-2 items-center justify-start px-4 w-full text-black rounded-md h-10 font-medium shadow-input bg-gray-50 dark:bg-zinc-900 dark:shadow-[0px_0px_1px_1px_var(--neutral-800)]"
             type="button"
-            onClick={() => signIn("google")}
+            onClick={handleGoogleSignIn}
           >
             <IconBrandGoogle className="h-4 w-4 text-neutral-800 dark:text-neutral-300" />
             <span className="text-neutral-700 dark:text-neutral-300 text-sm">

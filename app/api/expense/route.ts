@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import {PaymentMethodEnum} from '@prisma/client';
+import { PaymentMethodEnum, PrismaClientKnownRequestError } from '@prisma/client';
 import { sendBudgetAlert } from '@/utils/email';
 
 import { prisma } from '@/lib/prisma';
@@ -116,6 +116,17 @@ const validateDescription = (desc: string): boolean => {
   return /^[a-zA-Z0-9\s\-_.,!?()]{1,255}$/.test(desc);
 };
 
+// Add utility function for Prisma error messages
+const getPrismaErrorMessage = (errorCode: string): string => {
+  const errorMessages: Record<string, string> = {
+    P2002: 'A unique constraint would be violated.',
+    P2014: 'The change you are trying to make would violate data integrity.',
+    P2003: 'Foreign key constraint failed.',
+    DEFAULT: 'An unknown database error occurred.'
+  };
+  return errorMessages[errorCode] || errorMessages.DEFAULT;
+};
+
 export async function POST(req: Request) {
   const session = await getServerSession();
   if (!session?.user?.email) {
@@ -125,7 +136,7 @@ export async function POST(req: Request) {
   const data = await req.json();
 
   try {
-    // Validate and sanitize inputs
+    // Pre-validate data before starting transaction
     const description = sanitizeString(data.description);
     const amount = parseFloat(data.amount);
 
@@ -137,27 +148,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid amount' }, { status: 400 });
     }
 
-    // Get user first
-    const user = await prisma.user.findUnique({
+    // First get user and ensure categories exist outside transaction
+    const user = await prisma.user.findUniqueOrThrow({
       where: { email: session.user.email },
+      include: {
+        categories: true,
+      }
     });
 
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    // Ensure user has default categories
     await ensureUserCategories(user.id);
 
-    // Get user with categories after ensuring they exist
-    const userWithCategories = await prisma.user.findUnique({
-      where: { id: user.id },
-      include: { categories: true },
-    });
-
-    // Find category by name for this user
-    const category = userWithCategories?.categories.find(cat => cat.name === data.category);
-
+    // Find category and payment method before transaction
+    const category = user.categories.find(cat => cat.name === data.category);
     if (!category) {
       return NextResponse.json(
         { error: `Category '${data.category}' not found` },
@@ -165,7 +167,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // Find payment method
     const paymentMethod = await prisma.paymentMethod.findUnique({
       where: { name: data.paymentMethod as PaymentMethodEnum },
     });
@@ -174,84 +175,98 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid payment method' }, { status: 400 });
     }
 
-    // Create expense data object
-    const expenseData = {
-      userId: user.id,
-      date: new Date(data.date),
-      description,
-      amount,
-      categoryId: category.id,
-      paymentMethodId: paymentMethod.id,
-      notes: data.notes || '',
-      ...(data.recurring && data.recurring.pattern && {
-        recurring: {
-          create: {
-            pattern: {
-              create: {
-                type: data.recurring.pattern.type,
-                frequency: data.recurring.pattern.frequency
-              }
-            },
-            startDate: new Date(data.recurring.startDate),
-            endDate: data.recurring.endDate ? new Date(data.recurring.endDate) : null,
-            lastProcessed: new Date(data.recurring.startDate),
-            nextProcessDate: new Date(data.recurring.startDate),
+    // Now execute the transaction with increased timeout
+    const result = await prisma.$transaction(async (tx) => {
+      // Create expense data object
+      const expenseData = {
+        userId: user.id,
+        date: new Date(data.date),
+        description,
+        amount,
+        categoryId: category.id,
+        paymentMethodId: paymentMethod.id,
+        notes: data.notes || '',
+        ...(data.recurring && data.recurring.pattern && {
+          recurring: {
+            create: {
+              pattern: {
+                create: {
+                  type: data.recurring.pattern.type,
+                  frequency: data.recurring.pattern.frequency
+                }
+              },
+              startDate: new Date(data.recurring.startDate),
+              endDate: data.recurring.endDate ? new Date(data.recurring.endDate) : null,
+              lastProcessed: new Date(data.recurring.startDate),
+              nextProcessDate: new Date(data.recurring.startDate),
+            }
           }
-        }
-      })
-    };
+        })
+      };
 
-    const expense = await prisma.expense.create({
-      data: expenseData,
-      include: {
-        category: true,
-        paymentMethod: true,
-        recurring: {
-          include: {
-            pattern: true
+      const expense = await tx.expense.create({
+        data: expenseData,
+        include: {
+          category: true,
+          paymentMethod: true,
+          recurring: {
+            include: {
+              pattern: true
+            }
           }
-        }
-      },
-    });
-
-    // Check budget after creating expense
-    const userPreferences = await prisma.userPreference.findUnique({
-      where: { userId: user.id },
-    });
-
-    if (userPreferences?.monthlyBudget) {
-      const currentMonth = new Date().getMonth();
-      const currentYear = new Date().getFullYear();
-
-      const monthlyTotal = await prisma.expense.aggregate({
-        where: {
-          userId: user.id,
-          isVoid: false,
-          date: {
-            gte: new Date(currentYear, currentMonth, 1),
-            lt: new Date(currentYear, currentMonth + 1, 1),
-          },
-        },
-        _sum: {
-          amount: true,
         },
       });
 
-      const totalSpent = monthlyTotal._sum.amount || 0;
+      // Check budget limits
+      const userPreferences = await tx.userPreference.findUnique({
+        where: { userId: user.id },
+        select: { monthlyBudget: true }
+      });
 
-      if (totalSpent > userPreferences.monthlyBudget && session.user.email) {
-        // The sendBudgetAlert function will now check notification settings internally
-        await sendBudgetAlert(
-          session.user.email,
-          totalSpent,
-          userPreferences.monthlyBudget
-        );
+      if (userPreferences?.monthlyBudget) {
+        const currentMonth = new Date().getMonth();
+        const currentYear = new Date().getFullYear();
+
+        const monthlyTotal = await tx.expense.aggregate({
+          where: {
+            userId: user.id,
+            isVoid: false,
+            date: {
+              gte: new Date(currentYear, currentMonth, 1),
+              lt: new Date(currentYear, currentMonth + 1, 1),
+            },
+          },
+          _sum: {
+            amount: true,
+          },
+        });
+
+        const totalSpent = monthlyTotal._sum.amount || 0;
+
+        if (totalSpent > userPreferences.monthlyBudget && session.user.email) {
+          // Move budget alert outside transaction
+          setTimeout(() => {
+            sendBudgetAlert(
+              session.user.email!,
+              totalSpent,
+              userPreferences.monthlyBudget!
+            ).catch(console.error);
+          }, 0);
+        }
       }
-    }
 
-    return NextResponse.json(expense);
+      return expense;
+    }, {
+      timeout: 10000 // Increase timeout to 10 seconds
+    });
+
+    return NextResponse.json(result);
 
   } catch (error) {
+    if (error instanceof PrismaClientKnownRequestError) {
+      const errorMessage = getPrismaErrorMessage(error.code);
+      return NextResponse.json({ error: errorMessage }, { status: 400 });
+    }
     console.error('Expense creation error:', error);
     return NextResponse.json(
       { error: 'Failed to create expense' },

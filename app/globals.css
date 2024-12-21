@@ -87,4 +87,41 @@
     --chart-warning: 38 85% 55%;
     --chart-error: 0 75% 65%;
   }
+
+  /* Phone Input Styles */
+  .PhoneInput {
+    @apply flex gap-2 items-center;
+  }
+
+  .PhoneInputInput {
+    @apply flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .PhoneInputCountry {
+    @apply flex items-center gap-2 min-w-[80px];
+  }
+
+  .PhoneInputCountrySelect {
+    @apply h-10 rounded-md border border-input bg-background px-2 py-2 text-sm ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
+  }
+
+  .PhoneInputCountryIcon {
+    @apply w-5 h-4 overflow-hidden rounded-sm;
+  }
+
+  .PhoneInputCountrySelect[disabled] {
+    @apply cursor-not-allowed opacity-50;
+  }
+
+  .PhoneInputCountrySelectArrow {
+    @apply opacity-50 ml-1;
+  }
+
+  .PhoneInput--focus .PhoneInputInput {
+    @apply ring-2 ring-ring ring-offset-2;
+  }
+
+  .PhoneInput--error .PhoneInputInput {
+    @apply border-red-500 focus-visible:ring-red-500;
+  }
 }

@@ -1,5 +1,7 @@
 "use client"
-
+import PhoneInput from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
+import { isPossiblePhoneNumber, formatPhoneNumber, parsePhoneNumber } from 'libphonenumber-js';
 import { useState, useEffect, Suspense } from 'react';
 import { useSession } from 'next-auth/react';
 import { useToast } from "@/components/ui/use-toast";
@@ -23,6 +25,7 @@ import {
   DollarSign
 } from "lucide-react";
 import ProfileSkeleton from './loading';
+import { cn } from "@/lib/utils";
 
 export default function ProfilePage() {
   const { data: session } = useSession();
@@ -111,10 +114,39 @@ export default function ProfilePage() {
     },
   ];
 
+  const handlePhoneChange = (value: string) => {
+    setProfile(prev => ({
+      ...prev!,
+      contactInfo: {
+        ...prev!.contactInfo,
+        phone: value
+      }
+    }));
+  };
+
+  const validatePhone = (phone?: string) => {
+    if (!phone) return true;
+    try {
+      return isPossiblePhoneNumber(phone);
+    } catch {
+      return false;
+    }
+  };
+
   const handleSaveChanges = async () => {
     if (!profile) return;
-    setLoading(true);
     
+    // Validate phone before saving
+    if (!validatePhone(profile.contactInfo?.phone)) {
+      toast({
+        title: "Invalid Phone Number",
+        description: "Please enter a valid phone number",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
     try {
       let avatarUrl = profile.contactInfo?.avatarUrl;
       
@@ -171,6 +203,24 @@ export default function ProfilePage() {
       }
       setImageFile(file);
     }
+  };
+
+  const getBudgetNotification = () => {
+    if (!profile?.stats?.totalExpenses || !profile?.preferences?.monthlyBudget) {
+      return null;
+    }
+  
+    const totalExpenses = profile.stats.totalExpenses;
+    const monthlyBudget = profile.preferences.monthlyBudget;
+    const percentageUsed = (totalExpenses / monthlyBudget) * 100;
+  
+    if (percentageUsed >= 100) {
+      return "You have exceeded your monthly budget.";
+    } else if (percentageUsed >= 80) {
+      return "You are nearing your monthly budget limit.";
+    }
+  
+    return null;
   };
 
   if (!profile || loading) {
@@ -267,10 +317,26 @@ export default function ProfilePage() {
                         <Phone className="w-4 h-4" />
                         Phone
                       </label>
-                      <Input 
-                        value={profile.contactInfo?.phone || ''}
-                        onChange={e => setProfile({...profile, contactInfo: {...profile.contactInfo, phone: e.target.value}})}
-                      />
+                      <div className="relative">
+                        <PhoneInput
+                          international
+                          countryCallingCodeEditable={false}
+                          defaultCountry="US"
+                          placeholder="Enter phone number"
+                          value={profile.contactInfo?.phone || ''}
+                          onChange={handlePhoneChange}
+                          className={cn(
+                            "PhoneInput",
+                            !validatePhone(profile.contactInfo?.phone) && profile.contactInfo?.phone && "PhoneInput--error"
+                          )}
+                        />
+                        {profile.contactInfo?.phone && !validatePhone(profile.contactInfo?.phone) && (
+                          <p className="text-xs text-destructive mt-2 flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" />
+                            Please enter a valid phone number
+                          </p>
+                        )}
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <label className="text-sm font-medium flex items-center gap-2">
@@ -288,16 +354,19 @@ export default function ProfilePage() {
               </section>
 
               {/* Notifications */}
-              <section>
-                <h3 className="text-lg font-semibold mb-4">Notifications</h3>
-                <div className="space-y-4 rounded-lg border p-4">
-                  <div className="flex items-center gap-2 text-amber-600">
-                    <AlertCircle className="w-4 h-4" />
-                    <p className="text-sm">
-                    </p>
+              {getBudgetNotification() && (
+                <section>
+                  <h3 className="text-lg font-semibold mb-4">Notifications</h3>
+                  <div className="space-y-4 rounded-lg border p-4">
+                    <div className="flex items-center gap-2 text-amber-600">
+                      <AlertCircle className="w-4 h-4" />
+                      <p className="text-sm">
+                        {getBudgetNotification()}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </section>
+                </section>
+              )}
 
               <div className="flex justify-end gap-4 mt-auto pt-4">
                 <Button variant="outline">Cancel</Button>

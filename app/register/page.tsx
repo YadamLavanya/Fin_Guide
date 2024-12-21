@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -8,12 +8,24 @@ import { IconBrandGoogle } from "@tabler/icons-react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import zxcvbn from 'zxcvbn';
+import { useSession } from "next-auth/react";
 
 export default function SignupForm() {
   const [loading, setLoading] = useState(false);
   const [passwordError, setPasswordError] = useState("");
   const [formError, setFormError] = useState("");
   const router = useRouter();
+  const { data: session, status } = useSession();
+
+  useEffect(() => {
+    if (session) {
+      router.push("/dashboard");
+    }
+  }, [session, router]);
+
+  if (status === "loading") {
+    return null;
+  }
 
   const validatePassword = (password: string): string[] => {
     const result = zxcvbn(password);
@@ -62,7 +74,7 @@ export default function SignupForm() {
 
     try {
       // Create user using the signup API
-      const response = await fetch("/api/signup", {
+      const response = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -83,13 +95,14 @@ export default function SignupForm() {
         email,
         password,
         redirect: false,
+        callbackUrl: "/dashboard"
       });
 
       if (result?.error) {
         throw new Error(result.error);
+      } else if (result?.url) {
+        router.push(result.url);
       }
-
-      router.push("/dashboard");
     } catch (err: any) {
       setFormError(err.message);
     } finally {
@@ -97,12 +110,8 @@ export default function SignupForm() {
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    try {
-      await signIn("google", { callbackUrl: "/dashboard" });
-    } catch (err: any) {
-      setFormError(err.message);
-    }
+  const handleGoogleSignIn = () => {
+    signIn("google", { callbackUrl: "/dashboard" });
   };
 
   return (

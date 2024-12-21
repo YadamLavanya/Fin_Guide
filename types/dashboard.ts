@@ -1,4 +1,3 @@
-
 export interface DashboardStats {
   totalSpent: number;
   averageDaily: number;
@@ -32,8 +31,32 @@ export interface Transaction {
 }
 
 export interface DashboardData {
-  stats: DashboardStats;
-  monthlyTrends: MonthlyTrend[];
-  expenseCategories: ExpenseCategory[];
-  recentTransactions: Transaction[];
+  stats: {
+    totalSpent: number;
+    averageDaily: number;
+    monthlyBudget: number;
+    totalIncome: number;
+    changes: {
+      totalSpent: number;
+      averageDaily: number;
+      monthlyBudget: number;
+    };
+  };
+  monthlyTrends: Array<{
+    month: string;
+    amount: number;
+  }>;
+  expenseCategories: Array<{
+    name: string;
+    value: number;
+  }>;
+  recentTransactions: Array<{
+    id: string;
+    name: string;
+    amount: number;
+    type: 'expense' | 'income';
+    category: string;
+    date: string;
+    paymentMethod: string;
+  }>;
 }
