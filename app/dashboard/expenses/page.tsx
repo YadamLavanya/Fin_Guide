@@ -247,7 +247,8 @@ export default function ExpensesPage() {
         description: "Expense added successfully.",
       });
       await fetchExpenses();
-      handleDialogClose();
+      setIsAddExpenseOpen(false);  // Add this line
+      resetFormState();  // Already exists in handleDialogClose
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : "An unknown error occurred";
@@ -436,9 +437,9 @@ export default function ExpensesPage() {
               <CardTitle className="text-2xl font-bold">
                 Expense Tracker
               </CardTitle>
-              <Dialog>
+              <Dialog open={isAddExpenseOpen} onOpenChange={setIsAddExpenseOpen}>
                 <DialogTrigger asChild>
-                  <Button className="shrink-0">Add Expense</Button>
+                  <Button className="shrink-0" onClick={() => setIsAddExpenseOpen(true)}>Add Expense</Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>

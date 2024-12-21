@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { sendVerificationEmail } from '@/utils/email';
 import crypto from 'crypto';
 
 export async function POST() {
-  const session = await getServerSession();
+  const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -22,11 +23,15 @@ export async function POST() {
     return NextResponse.json({ verified: true });
   }
 
-  // Use VerificationToken model instead of Session for storing verification tokens
+  // Delete any existing verification tokens for this user
+  await prisma.verificationToken.deleteMany({
+    where: { identifier: user.email }
+  });
+
+  // Create new verification token
   const token = crypto.randomBytes(32).toString('hex');
   const expires = new Date(Date.now() + 3600000); // 1 hour from now
 
-  // Store verification token in database
   await prisma.verificationToken.create({
     data: {
       identifier: user.email,
@@ -39,7 +44,6 @@ export async function POST() {
   await sendVerificationEmail(user.email, token);
 
   return NextResponse.json({
-    verified: false,
     message: 'Verification email sent'
   });
 }
@@ -80,7 +84,7 @@ export async function GET(req: Request) {
   }
 
   // If no token, just check verification status
-  const session = await getServerSession();
+  const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

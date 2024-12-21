@@ -23,6 +23,9 @@ export interface ProviderConfig {
   apiKey: string;
   baseUrl?: string;
   model?: string;
+  customModel?: string;
+  contextLength?: number;
+  temperature?: number;
 }
 
 const DEFAULT_CONFIGS: Record<SupportedProvider, Partial<ProviderConfig>> = {
@@ -31,7 +34,12 @@ const DEFAULT_CONFIGS: Record<SupportedProvider, Partial<ProviderConfig>> = {
   gemini: { model: 'gemini-pro' },
   cohere: { model: 'command' },
   groq: { model: 'mixtral-8x7b-32768' },
-  ollama: { baseUrl: 'http://localhost:11434', model: 'llama2' },
+  ollama: { 
+    baseUrl: 'http://localhost:11434', 
+    model: 'llama2',
+    contextLength: 4096,
+    temperature: 0.7
+  },
   mistral: { model: 'mistral-medium' }
 };
 
@@ -42,11 +50,17 @@ export function createLLMProvider(
   const Provider = providers[providerName];
   if (!Provider) throw new Error(`Unsupported provider: ${providerName}`);
 
+  // Special handling for Ollama's customModel
+  if (providerName === 'ollama' && config.customModel) {
+    config.model = config.customModel;
+  }
+
   const finalConfig = {
     ...DEFAULT_CONFIGS[providerName],
     ...config
   };
 
+  // Only check for API key if provider requires it
   if (!finalConfig.apiKey && providerName !== 'ollama') {
     throw new Error(`API key required for ${providerName}`);
   }

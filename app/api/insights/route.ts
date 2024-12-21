@@ -48,75 +48,168 @@ function generateBasicInsights(transactionData: TransactionData) {
   };
 }
 
+function generateComprehensiveInsights(transactionData: TransactionData) {
+  const insights = [];
+  const goals = [];
+  
+  // Calculate core metrics
+  const totalExpenses = transactionData.totalExpenses;
+  const totalIncome = transactionData.totalIncome;
+  const balance = totalIncome - totalExpenses;
+  const savingsRate = totalIncome > 0 ? ((totalIncome - totalExpenses) / totalIncome) * 100 : 0;
+
+  // Generate category analysis
+  const expenseCategories = transactionData.categories
+    .filter(c => c.type === 'expense')
+    .sort((a, b) => b.totalAmount - a.totalAmount);
+
+  // Monthly trends with filtered changes
+  const monthOverMonth = {
+    insights: [],
+    changes: transactionData.previousMonth ? transactionData.categories
+      .map(cat => {
+        const prevCat = transactionData.previousMonth?.categories.find(c => c.name === cat.name);
+        const prevAmount = prevCat?.totalAmount || 0;
+        const change = prevAmount > 0 ? ((cat.totalAmount - prevAmount) / prevAmount) * 100 : 0;
+        
+        return {
+          category: cat.name,
+          previousAmount: prevAmount,
+          currentAmount: cat.totalAmount,
+          percentageChange: change
+        };
+      })
+      .filter(change => Math.abs(change.percentageChange) > 0) // Only include actual changes
+      .sort((a, b) => Math.abs(b.percentageChange) - Math.abs(a.percentageChange)) // Sort by magnitude
+    : []
+  };
+
+  // Add month-over-month insights
+  if (transactionData.previousMonth) {
+    const totalChangePercent = ((totalExpenses - transactionData.previousMonth.totalExpenses) / transactionData.previousMonth.totalExpenses) * 100;
+    monthOverMonth.insights.push(
+      `Overall spending ${totalChangePercent > 0 ? 'increased' : 'decreased'} by ${Math.abs(totalChangePercent).toFixed(1)}% compared to last month`
+    );
+  }
+
+  // Enhanced budget alerts generation
+  const budgetAlerts = []; // Keep only this declaration
+  
+  // Category budget alerts
+  transactionData.categories
+    .filter(cat => cat.type === 'expense' && cat.budget)
+    .forEach(cat => {
+      const percentage = (cat.totalAmount / cat.budget!) * 100;
+      const remaining = cat.budget! - cat.totalAmount;
+
+      if (percentage >= 100) {
+        budgetAlerts.push({
+          category: cat.name,
+          severity: percentage >= 120 ? 'high' : 'medium',
+          message: `${cat.name} is over budget by ${(percentage - 100).toFixed(1)}% ($${(-remaining).toFixed(2)})`,
+          current: cat.totalAmount,
+          limit: cat.budget,
+          percentage: percentage
+        });
+      } else if (percentage >= 80) {
+        budgetAlerts.push({
+          category: cat.name,
+          severity: 'low',
+          message: `${cat.name} is approaching budget limit ($${remaining.toFixed(2)} remaining)`,
+          current: cat.totalAmount,
+          limit: cat.budget,
+          percentage: percentage
+        });
+      }
+    });
+
+  // Overall monthly budget alert
+  if (transactionData.monthlyBudget && transactionData.monthlyBudget > 0) {
+    const overallPercentage = (totalExpenses / transactionData.monthlyBudget) * 100;
+    const remainingBudget = transactionData.monthlyBudget - totalExpenses;
+
+    if (overallPercentage >= 100) {
+      budgetAlerts.unshift({
+        category: 'Overall',
+        severity: 'high',
+        message: `Total spending exceeds monthly budget by ${(overallPercentage - 100).toFixed(1)}% ($${(-remainingBudget).toFixed(2)})`,
+        current: totalExpenses,
+        limit: transactionData.monthlyBudget,
+        percentage: overallPercentage
+      });
+    } else if (overallPercentage >= 80) {
+      budgetAlerts.unshift({
+        category: 'Overall',
+        severity: 'medium',
+        message: `Approaching monthly budget limit ($${remainingBudget.toFixed(2)} remaining)`,
+        current: totalExpenses,
+        limit: transactionData.monthlyBudget,
+        percentage: overallPercentage
+      });
+    }
+  }
+
+  // Sort alerts by severity (high -> medium -> low)
+  budgetAlerts.sort((a, b) => {
+    const severityOrder = { high: 3, medium: 2, low: 1 };
+    return severityOrder[b.severity] - severityOrder[a.severity];
+  });
+
+  // Enhanced category analysis
+  const categoryAnalysis = expenseCategories.map(cat => ({
+    name: cat.name,
+    totalAmount: cat.totalAmount,
+    percentage: (cat.totalAmount / totalExpenses) * 100,
+    trend: transactionData.previousMonth 
+      ? ((cat.totalAmount - (transactionData.previousMonth.categories.find(c => c.name === cat.name)?.totalAmount || 0)) /
+         (transactionData.previousMonth.categories.find(c => c.name === cat.name)?.totalAmount || 1)) * 100
+      : 0
+  }));
+
+  // Generate smart goals
+  if (savingsRate < 20) {
+    goals.push({
+      category: 'Savings',
+      current: balance,
+      target: totalIncome * 0.2,
+      progress: (savingsRate / 20) * 100,
+      description: 'Build emergency savings - aim for 20% of income',
+      type: 'savings'
+    });
+  }
+
+  expenseCategories.forEach(cat => {
+    if (cat.budget && cat.totalAmount > cat.budget) {
+      goals.push({
+        category: cat.name,
+        current: cat.totalAmount,
+        target: cat.budget,
+        progress: Math.max(0, 100 - ((cat.totalAmount - cat.budget) / cat.budget * 100)),
+        description: `Reduce ${cat.name} spending to stay within budget`,
+        type: 'reduction'
+      });
+    }
+  });
+
+  return {
+    summary: `Monthly Summary: Income $${totalIncome.toFixed(2)}, Expenses $${totalExpenses.toFixed(2)}, Savings Rate ${savingsRate.toFixed(1)}%`,
+    monthOverMonth,
+    budgetAlerts,
+    categoryAnalysis,
+    goals,
+    stats: {
+      savingsRate,
+      balance,
+      topExpenses: categoryAnalysis.slice(0, 3)
+    }
+  };
+}
+
 // Add response type validation
-function validateLLMResponse(response: any): response is InsightData {
-  const hasRequiredArrays = 
-    Array.isArray(response?.insights) &&
-    Array.isArray(response?.tips) &&
-    Array.isArray(response?.monthOverMonth?.changes) &&
-    Array.isArray(response?.budgetAlerts) &&
-    Array.isArray(response?.goals);
-
-  const hasRequiredFields =
-    typeof response?.summary === 'string' &&
-    Array.isArray(response?.monthOverMonth?.insights);
-
-  // Add budget analysis for categories over budget
-  if (hasRequiredArrays && response.budgetAlerts.length === 0) {
-    response.budgetAlerts = response.monthOverMonth.changes
-      .filter(change => change.percentageChange > 10)
-      .map(change => ({
-        category: change.category,
-        severity: change.percentageChange > 20 ? 'high' : 'medium',
-        message: `${change.category} spending increased by ${change.percentageChange.toFixed(1)}%`,
-        percentage: change.percentageChange
-      }));
-  }
-
-  // Generate meaningful goals if none exist or if they're invalid
-  if (hasRequiredArrays) {
-    const categories = response.monthOverMonth.changes
-      .filter(change => change.percentageChange > 0)
-      .sort((a, b) => b.percentageChange - a.percentageChange);
-    
-    response.goals = categories.map(cat => {
-      const targetAmount = Math.min(cat.previousAmount, cat.currentAmount);
-      const currentAmount = cat.currentAmount;
-      const progress = currentAmount > targetAmount 
-        ? Math.max(0, 100 - ((currentAmount - targetAmount) / targetAmount * 100))
-        : 100;
-
-      return {
-        category: cat.category,
-        current: currentAmount,
-        target: targetAmount,
-        progress: Math.round(progress),
-        type: 'reduction',
-        description: `Reduce ${cat.category} spending to ${targetAmount.toLocaleString('en-US', {
-          style: 'currency',
-          currency: 'USD'
-        })}`
-      };
-    });
-
-    // Add savings goal if missing
-    const monthlyIncome = response.monthOverMonth.changes
-      .find(c => c.category === 'Income')?.currentAmount || 0;
-    const targetSavings = monthlyIncome * 0.2; // 20% of income
-    const currentSavings = monthlyIncome - response.totalExpenses;
-    const savingsProgress = Math.min(100, (currentSavings / targetSavings) * 100);
-
-    response.goals.push({
-      category: 'Monthly Savings',
-      current: currentSavings,
-      target: targetSavings,
-      progress: Math.max(0, Math.round(savingsProgress)),
-      type: 'savings',
-      description: 'Save 20% of monthly income'
-    });
-  }
-
-  return hasRequiredArrays && hasRequiredFields;
+function validateLLMResponse(response: any): boolean {
+  return response && 
+         Array.isArray(response.commentary) && 
+         Array.isArray(response.tips);
 }
 
 export async function GET(req: Request) {
@@ -127,10 +220,39 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get API keys and config from headers
-    const llmProvider = req.headers.get('x-llm-provider') || 'groq';
-    const apiKey = req.headers.get('x-api-key');
+    // Get provider info from headers
+    const llmProvider = (req.headers.get('x-llm-provider') || 'groq') as SupportedProvider;
+    const apiKey = req.headers.get('x-api-key') || '';
     const llmConfig = req.headers.get('x-llm-config');
+
+    // Initialize provider config
+    let providerConfig: ProviderConfig = { apiKey };
+
+    // Parse additional config if provided
+    if (llmConfig) {
+      try {
+        const parsedConfig = JSON.parse(llmConfig);
+        
+        // For Ollama, ensure we have proper config structure
+        if (llmProvider === 'ollama') {
+          providerConfig = {
+            apiKey: '', // Ollama doesn't need API key
+            baseUrl: parsedConfig.baseUrl || 'http://localhost:11434',
+            model: parsedConfig.customModel || parsedConfig.model || 'llama2',
+            contextLength: parsedConfig.contextLength || 4096,
+            temperature: parsedConfig.temperature || 0.7
+          };
+        } else {
+          // For other providers, merge with default config
+          providerConfig = {
+            ...providerConfig,
+            ...parsedConfig
+          };
+        }
+      } catch (e) {
+        console.error('Failed to parse LLM config:', e);
+      }
+    }
 
     // Fetch user data first
     const user = await prisma.user.findUnique({
@@ -233,45 +355,50 @@ export async function GET(req: Request) {
       monthlyBudget // Add overall monthly budget from preferences
     };
 
-    if (!apiKey) {
-      return NextResponse.json(generateBasicInsights(transactionData));
-    }
+    // Generate computed insights first
+    const computedInsights = generateComprehensiveInsights(transactionData);
 
-    try {
-      const config = {
-        apiKey,
-        ...(llmConfig ? JSON.parse(llmConfig) : {})
-      };
+    // Determine if we should use LLM
+    const shouldUseLLM = llmProvider === 'ollama' || (llmProvider !== 'ollama' && apiKey);
 
-      const provider = createLLMProvider(llmProvider, config);
-      const llmResponse = await provider.analyze(transactionData, generateLLMPrompt(transactionData));
+    if (shouldUseLLM) {
+      try {
+        const provider = createLLMProvider(llmProvider, providerConfig);
+        const llmResponse = await provider.analyze(transactionData);
 
-      if (validateLLMResponse(llmResponse)) {
+        if (validateLLMResponse(llmResponse)) {
+          const finalResponse = {
+            ...computedInsights,
+            commentary: llmResponse.commentary,
+            tips: llmResponse.tips
+          };
+
+          llmLogger.log({
+            timestamp: new Date().toISOString(),
+            provider: llmProvider,
+            prompt: generateLLMPrompt(transactionData),
+            response: finalResponse,
+            duration: Date.now() - startTime,
+            success: true,
+            level: 'info'
+          });
+
+          return NextResponse.json(finalResponse);
+        }
+      } catch (llmError) {
         llmLogger.log({
           timestamp: new Date().toISOString(),
           provider: llmProvider,
-          prompt: generateLLMPrompt(transactionData),
-          response: llmResponse,
+          error: llmError,
           duration: Date.now() - startTime,
-          success: true,
-          level: 'info'
+          success: false,
+          level: 'error'
         });
-        return NextResponse.json(llmResponse);
       }
-
-      throw new Error('Invalid LLM response format');
-    } catch (llmError) {
-      llmLogger.log({
-        timestamp: new Date().toISOString(),
-        provider: llmProvider,
-        prompt: generateLLMPrompt(transactionData),
-        error: llmError,
-        duration: Date.now() - startTime,
-        success: false,
-        level: 'error'
-      });
-      return NextResponse.json(generateBasicInsights(transactionData));
     }
+
+    // Return computed insights if LLM fails or isn't configured
+    return NextResponse.json(computedInsights);
     
   } catch (error) {
     llmLogger.log({

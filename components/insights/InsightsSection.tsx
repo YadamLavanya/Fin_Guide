@@ -41,25 +41,48 @@ const EmptyStateMessages = {
 };
 
 interface InsightData {
-  insights: string[];
-  tips: string[];
+  // Update the interface to match the backend response
   summary: string;
+  commentary?: string[];
+  tips?: string[];
+  monthOverMonth: {
+    insights: string[];
+    changes: {
+      category: string;
+      previousAmount: number;
+      currentAmount: number;
+      percentageChange: number;
+    }[];
+  };
+  budgetAlerts: {
+    category: string;
+    severity: 'high' | 'medium' | 'low';
+    message: string;
+    percentage: number;
+  }[];
   goals: {
-    name: string;
+    category: string;
     current: number;
     target: number;
     progress: number;
+    description: string;
+    type: 'reduction' | 'savings';
   }[];
-  alerts: {
-    type: 'warning' | 'info' | 'success';
-    message: string;
-  }[];
-  comparisons: {
-    category: string;
-    previousMonth: number;
-    currentMonth: number;
-    percentageChange: number;
-  }[];
+  stats: {
+    savingsRate: number;
+    balance: number;
+    topExpenses: Array<{
+      name: string;
+      totalAmount: number;
+      type: string;
+    }>;
+  };
+  categoryAnalysis?: Array<{
+    name: string;
+    totalAmount: number;
+    percentage: number;
+    trend: number;
+  }>;
 }
 
 export function InsightsSectionWrapper() {
@@ -72,7 +95,7 @@ export function InsightsSectionWrapper() {
 
 const transformInsightsData = (data: any): InsightData => ({
   summary: data.summary || 'No summary available',
-  insights: data.insights || [],
+  commentary: data.commentary || [],  // Ensure commentary is included
   tips: data.tips || [],
   monthOverMonth: {
     insights: data.monthOverMonth?.insights || [],
@@ -95,6 +118,21 @@ const transformInsightsData = (data: any): InsightData => ({
     target: Number(goal.target) || 0,
     progress: Number(goal.progress) || 0,
     description: goal.description
+  })) || [],
+  stats: {
+    savingsRate: data.stats?.savingsRate || 0,
+    balance: data.stats?.balance || 0,
+    topExpenses: data.stats?.topExpenses?.map((expense: any) => ({
+      name: expense.name,
+      totalAmount: Number(expense.totalAmount) || 0,
+      type: expense.type
+    })) || []
+  },
+  categoryAnalysis: data.categoryAnalysis?.map((category: any) => ({
+    name: category.name,
+    totalAmount: Number(category.totalAmount) || 0,
+    percentage: Number(category.percentage) || 0,
+    trend: Number(category.trend) || 0
   })) || []
 });
 
@@ -378,17 +416,51 @@ function InsightsSection() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {/* Summary Card */}
+        {/* Summary Card with Commentary */}
         {renderSection("overview", 
           <Card className="col-span-full">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BrainCircuit className="h-5 w-5" />
-                Monthly Overview
+                Monthly Overview & AI Commentary
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">{insights?.summary}</p>
+              {/* Always render commentary section */}
+              <div className="space-y-2 border-t pt-4">
+                <p className="text-sm font-medium">AI Commentary:</p>
+                {insights?.commentary?.map((comment, idx) => (
+                  <div key={idx} className="flex gap-2 items-start bg-muted/50 p-3 rounded-lg">
+                    <BrainCircuit className="h-4 w-4 mt-1 shrink-0 text-primary" />
+                    <p className="text-sm">
+                      {comment}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Smart Tips Section - Keep separate from Commentary */}
+        {insights?.tips && insights.tips.length > 0 && (
+          <Card className="col-span-full">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Lightbulb className="h-5 w-5" />
+                Smart Tips
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">{insights?.summary}</p>
+              <ul className="space-y-2">
+                {insights.tips.map((tip, index) => (
+                  <li key={index} className="flex gap-2 items-start bg-muted/50 p-3 rounded-lg">
+                    <AlertCircle className="h-4 w-4 mt-1 shrink-0 text-primary" />
+                    <span className="text-sm">{tip}</span>
+                  </li>
+                ))}
+              </ul>
             </CardContent>
           </Card>
         )}
@@ -404,40 +476,30 @@ function InsightsSection() {
             </CardHeader>
             <CardContent>
               <ul className="space-y-2">
-                {insights.insights.map((insight, index) => (
-                  <li key={index} className="flex gap-2 items-start">
-                    <TrendingUp className="h-4 w-4 mt-1 shrink-0 text-primary" />
-                    <span className="text-sm text-muted-foreground">{insight}</span>
-                  </li>
-                ))}
+                {insights.stats && (
+                  <>
+                    <li className="flex gap-2 items-start">
+                      <TrendingUp className="h-4 w-4 mt-1 shrink-0 text-primary" />
+                      <span className="text-sm text-muted-foreground">
+                        Your savings rate is {insights.stats.savingsRate.toFixed(1)}%
+                      </span>
+                    </li>
+                    {insights.stats.topExpenses.map((expense, index) => (
+                      <li key={index} className="flex gap-2 items-start">
+                        <TrendingUp className="h-4 w-4 mt-1 shrink-0 text-primary" />
+                        <span className="text-sm text-muted-foreground">
+                          {expense.name}: ${expense.totalAmount.toLocaleString()}
+                        </span>
+                      </li>
+                    ))}
+                  </>
+                )}
               </ul>
             </CardContent>
           </Card>
         )}
 
-        {/* Tips Cards */}
-        {renderSection("tips", 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Lightbulb className="h-5 w-5" />
-                Recommendations
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2">
-                {insights.tips.map((tip, index) => (
-                  <li key={index} className="flex gap-2 items-start">
-                    <AlertCircle className="h-4 w-4 mt-1 shrink-0 text-primary" />
-                    <span className="text-sm text-muted-foreground">{tip}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* New: Financial Goals */}
+        {/* New: Financial Goals
         {renderSection("goals", 
           <Card className="col-span-full md:col-span-1">
             <CardHeader>
@@ -447,6 +509,9 @@ function InsightsSection() {
               </CardTitle>
             </CardHeader>
             <CardContent>
+              <p className="text-sm text-muted-foreground italic mb-4">
+                "Rome wasn't built in a day, and neither is financial freedom! 🌟"
+              </p>
               <div className="space-y-4">
                 {insights?.goals?.map((goal, index) => {
                   if (!goal?.category) return null;
@@ -493,6 +558,41 @@ function InsightsSection() {
               </div>
             </CardContent>
           </Card>
+        )} */}
+
+        {/* Update Monthly Comparisons section */}
+        {renderSection("comparisons", 
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ArrowUpDown className="h-5 w-5" />
+                Notable Changes
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {insights?.monthOverMonth?.changes
+                  ?.filter(change => Math.abs(change.percentageChange) > 0)
+                  .sort((a, b) => Math.abs(b.percentageChange) - Math.abs(a.percentageChange))
+                  .map((change, index) => (
+                    <div key={index} className="flex items-center justify-between">
+                      <span className="text-sm font-medium">{change.category}</span>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-sm ${
+                          change.percentageChange > 0 ? 'text-red-600' : 'text-green-600'
+                        }`}>
+                          {change.percentageChange > 0 ? '↑' : '↓'}
+                          {Math.abs(change.percentageChange).toFixed(1)}%
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          (${change.currentAmount.toLocaleString()})
+                        </span>
+                      </div>
+                    </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* Budget Alerts section with null checks */}
@@ -506,10 +606,8 @@ function InsightsSection() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {insights?.budgetAlerts?.map((alert, index) => {
-                  if (!alert?.message) return null;
-                  
-                  return (
+                {insights?.budgetAlerts?.length ? (
+                  insights.budgetAlerts.map((alert, index) => (
                     <div key={index} 
                       className={`p-3 rounded-lg flex items-start gap-2
                         ${alert.severity === 'high' ? 'bg-red-50 text-red-700' :
@@ -518,51 +616,37 @@ function InsightsSection() {
                       <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
                       <div className="space-y-1 flex-1">
                         <p className="text-sm font-medium">{alert.message}</p>
-                        {alert.current != null && alert.limit != null && (
-                          <div className="text-xs flex justify-between">
-                            <span>
-                              ${(alert.current || 0).toLocaleString()} / ${(alert.limit || 0).toLocaleString()}
-                            </span>
-                            <span>{alert.percentage || 0}% used</span>
+                        <div className="flex justify-between text-xs">
+                          <span>
+                            ${alert.current?.toLocaleString()} / ${alert.limit?.toLocaleString()}
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <div className="w-20 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                              <div 
+                                className={`h-full ${
+                                  alert.severity === 'high' ? 'bg-red-500' :
+                                  alert.severity === 'medium' ? 'bg-yellow-500' :
+                                  'bg-blue-500'
+                                }`}
+                                style={{ width: `${Math.min(100, alert.percentage)}%` }}
+                              />
+                            </div>
+                            <span>{alert.percentage.toFixed(0)}%</span>
                           </div>
-                        )}
+                        </div>
                       </div>
                     </div>
-                  );
-                })}
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center">
+                    Looking good! No budget alerts at this time. 🎉
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Update Monthly Comparisons section */}
-        {renderSection("comparisons", 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ArrowUpDown className="h-5 w-5" />
-                Month-over-Month
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {insights?.monthOverMonth?.changes?.map((change, index) => (
-                  <div key={index} className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">{change.category}</span>
-                    <div className="flex items-center gap-2">
-                      <span className={`text-sm font-medium ${
-                        (change.percentageChange || 0) > 0 ? 'text-red-600' : 'text-green-600'
-                      }`}>
-                        {(change.percentageChange || 0) > 0 ? '↑' : '↓'}
-                        {Math.abs(change.percentageChange || 0).toFixed(1)}%
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {/* New: Category Breakdown */}
         {renderSection("categories", 
@@ -575,13 +659,28 @@ function InsightsSection() {
             </CardHeader>
             <CardContent>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {insights?.insights
-                  .filter(insight => insight.includes('category') || insight.includes('spending'))
-                  .map((insight, index) => (
-                    <div key={index} className="flex items-start gap-2 p-3 rounded-lg bg-muted/50">
-                      <BarChart className="h-4 w-4 mt-0.5 text-primary" />
-                      <span className="text-sm">{insight}</span>
+                {insights?.categoryAnalysis?.map((category, index) => (
+                  <div key={index} className="flex items-start gap-3 p-4 rounded-lg bg-muted/50">
+                    <BarChart className="h-5 w-5 mt-0.5 text-primary shrink-0" />
+                    <div className="space-y-1 flex-1">
+                      <div className="flex justify-between">
+                        <span className="font-medium">{category.name}</span>
+                        <span className="text-muted-foreground">
+                          {category.percentage.toFixed(1)}%
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        ${category.totalAmount.toLocaleString()}
+                      </p>
+                      {category.trend !== 0 && (
+                        <span className={`text-xs ${
+                          category.trend > 0 ? 'text-red-500' : 'text-green-500'
+                        }`}>
+                          {category.trend > 0 ? '↑' : '↓'} {Math.abs(category.trend).toFixed(1)}% vs last month
+                        </span>
+                      )}
                     </div>
+                  </div>
                 ))}
               </div>
             </CardContent>

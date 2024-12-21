@@ -23,43 +23,43 @@ export class GroqProvider implements LLMProvider {
         messages: [
           { 
             role: 'system', 
-            content: 'You are a financial analysis assistant. Always respond with valid JSON. Handle missing data with defaults and avoid Infinity/NaN values.' 
+            content: 'You are a financial analysis assistant. Return valid JSON with commentary and tips arrays.' 
           },
           { 
             role: 'user', 
-            content: `Analyze this financial data and respond with JSON:\n${prompt}` 
+            content: prompt 
           }
         ],
         response_format: { type: 'json_object' },
-        temperature: 0.7 // Add some variability while maintaining coherence
+        temperature: 0.7
       });
 
-      let result = JSON.parse(response.choices[0].message.content || '{}');
+      const content = response.choices[0].message?.content;
+      if (!content) {
+        throw new Error('Empty response from LLM');
+      }
+
+      let parsedResponse = JSON.parse(content);
       
-      // Ensure all required arrays exist
-      result = {
-        ...result,
-        insights: result.insights || [],
-        tips: result.tips || [],
-        monthOverMonth: {
-          insights: result.monthOverMonth?.insights || [],
-          changes: result.monthOverMonth?.changes || []
-        },
-        budgetAlerts: result.budgetAlerts || [],
-        goals: result.goals || []
-      };
+      // Ensure response has required structure
+      if (!Array.isArray(parsedResponse.commentary) || !Array.isArray(parsedResponse.tips)) {
+        parsedResponse = {
+          commentary: [],
+          tips: []
+        };
+      }
 
       llmLogger.log({
         timestamp: new Date().toISOString(),
         provider: 'groq',
         prompt,
-        response: result,
+        response: parsedResponse,
         duration: Date.now() - startTime,
         success: true,
         level: 'info'
       });
 
-      return result;
+      return parsedResponse;
     } catch (error) {
       llmLogger.log({
         timestamp: new Date().toISOString(),

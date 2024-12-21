@@ -1,7 +1,8 @@
 "use client";
-import { Wallet, Home, Receipt, Settings, Link as LinkIcon } from "lucide-react";
+import { Wallet, Home, Receipt, Settings, AlertCircle, Bot, Link as LinkIcon } from "lucide-react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import Image from "next/image";
 
 import {
   Sidebar,
@@ -43,10 +44,20 @@ const items = [
     icon: Wallet,
   },
   {
+    title: "Chat With AI Assistant",
+    url: "/dashboard/chat",
+    icon: Bot,
+  },
+  {
+    title: "Report Issue",
+    url: "/dashboard/report",
+    icon: AlertCircle,
+  },
+  {
     title: "Settings",
     url: "/dashboard/settings",
     icon: Settings,
-  },
+  }
 ];
 
 export function AppSidebar() {
@@ -65,7 +76,9 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Application</SidebarGroupLabel>
+            <SidebarGroupLabel >
+              <h1>CurioPay</h1>
+            </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (

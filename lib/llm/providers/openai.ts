@@ -19,3 +19,4 @@ export class OpenAIProvider implements LLMProvider {
     return JSON.parse(response.choices[0].message.content || '{}');
   }
 }
+//todo: implement the OpenAIProvider class

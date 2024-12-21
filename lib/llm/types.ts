@@ -38,26 +38,37 @@ interface BudgetAlert {
 }
 
 export interface InsightData {
-  summary: string;
-  insights: string[];
-  tips: string[];
-  monthOverMonth: {
+  commentary: string[];  // Make this required, not optional
+  tips?: string[];
+  summary?: string;
+  monthOverMonth?: {
     insights: string[];
-    changes: Array<{
+    changes: {
       category: string;
       previousAmount: number;
       currentAmount: number;
       percentageChange: number;
-    }>;
+    }[];
   };
-  budgetAlerts?: BudgetAlert[];
-  goals: Array<{
+  budgetAlerts?: {
+    category: string;
+    severity: 'high' | 'medium' | 'low';
+    message: string;
+    percentage: number;
+  }[];
+  goals?: {
     category: string;
     current: number;
     target: number;
     progress: number;
-    description?: string;
-  }>;
+    description: string;
+    type: 'reduction' | 'savings' | 'limit';
+  }[];
+  stats?: {
+    savingsRate: number;
+    balance: number;
+    topExpenses: any[];
+  };
 }
 
 export interface LLMProvider {

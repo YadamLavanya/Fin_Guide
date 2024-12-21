@@ -122,13 +122,14 @@ export default function SettingsPage() {
   const [showProviderConfig, setShowProviderConfig] = useState(false);
   const [ollamaConfig, setOllamaConfig] = useState(() => {
     if (typeof window !== 'undefined') {
-      return JSON.parse(localStorage.getItem('ollama-config') || JSON.stringify({
+      const savedConfig = localStorage.getItem('ollama-config');
+      return savedConfig ? JSON.parse(savedConfig) : {
         baseUrl: 'http://localhost:11434',
         model: 'llama2',
         customModel: '',
         contextLength: 4096,
         temperature: 0.7,
-      }));
+      };
     }
     return {
       baseUrl: 'http://localhost:11434',
@@ -146,24 +147,24 @@ export default function SettingsPage() {
   });
 
   const llmProviders: LLMProvider[] = [
-    {
-      id: 'openai',
-      name: 'OpenAI',
-      svgPath: '/openai.svg',
-      description: 'GPT-3.5, GPT-4, and more',
-      requiresApiKey: true,
-      apiKeyPlaceholder: 'sk-...',
-      apiKeyLink: 'https://platform.openai.com/api-keys',
-    },
-    {
-      id: 'anthropic',
-      name: 'Anthropic',
-      svgPath: '/anthropic.svg',
-      description: 'Claude and Claude Instant',
-      requiresApiKey: true,
-      apiKeyPlaceholder: 'sk-ant-...',
-      apiKeyLink: 'https://console.anthropic.com/account/keys',
-    },
+    // {
+    //   id: 'openai',
+    //   name: 'OpenAI',
+    //   svgPath: '/openai.svg',
+    //   description: 'GPT-3.5, GPT-4, and more',
+    //   requiresApiKey: true,
+    //   apiKeyPlaceholder: 'sk-...',
+    //   apiKeyLink: 'https://platform.openai.com/api-keys',
+    // },
+    // {
+    //   id: 'anthropic',
+    //   name: 'Anthropic',
+    //   svgPath: '/anthropic.svg',
+    //   description: 'Claude and Claude Instant',
+    //   requiresApiKey: true,
+    //   apiKeyPlaceholder: 'sk-ant-...',
+    //   apiKeyLink: 'https://console.anthropic.com/account/keys',
+    // },
     {
       id: 'ollama',
       name: 'Ollama',
@@ -177,15 +178,15 @@ export default function SettingsPage() {
         temperature: true,
       },
     },
-    {
-      id: 'google',
-      name: 'Google AI',
-      svgPath: '/google.svg',
-      description: 'PaLM and Gemini',
-      requiresApiKey: true,
-      apiKeyPlaceholder: 'AIza...',
-      apiKeyLink: 'https://makersuite.google.com/app/apikeys',
-    },
+    // {
+    //   id: 'google',
+    //   name: 'Google AI',
+    //   svgPath: '/google.svg',
+    //   description: 'PaLM and Gemini',
+    //   requiresApiKey: true,
+    //   apiKeyPlaceholder: 'AIza...',
+    //   apiKeyLink: 'https://makersuite.google.com/app/apikeys',
+    // },
     {
       id: 'cohere',
       name: 'Cohere',
@@ -195,24 +196,24 @@ export default function SettingsPage() {
       apiKeyPlaceholder: 'co-...',
       apiKeyLink: 'https://dashboard.cohere.com/api-keys',
     },
-    {
-      id: 'mistral',
-      name: 'Mistral AI',
-      svgPath: '/mistral.svg',
-      description: 'Mistral-7B and more',
-      requiresApiKey: true,
-      apiKeyPlaceholder: 'mis-...',
-      apiKeyLink: 'https://console.mistral.ai/api-keys/',
-    },
-    {
-      id: 'azure',
-      name: 'Azure OpenAI',
-      svgPath: '/azure.svg',
-      description: 'Azure-hosted models',
-      requiresApiKey: true,
-      apiKeyPlaceholder: 'azure-key',
-      apiKeyLink: 'https://portal.azure.com/',
-    },
+    // {
+    //   id: 'mistral',
+    //   name: 'Mistral AI',
+    //   svgPath: '/mistral.svg',
+    //   description: 'Mistral-7B and more',
+    //   requiresApiKey: true,
+    //   apiKeyPlaceholder: 'mis-...',
+    //   apiKeyLink: 'https://console.mistral.ai/api-keys/',
+    // },
+    // {
+    //   id: 'azure',
+    //   name: 'Azure OpenAI',
+    //   svgPath: '/azure.svg',
+    //   description: 'Azure-hosted models',
+    //   requiresApiKey: true,
+    //   apiKeyPlaceholder: 'azure-key',
+    //   apiKeyLink: 'https://portal.azure.com/',
+    // },
     {
       id: 'groq',
       name: 'Groq',
@@ -490,6 +491,17 @@ export default function SettingsPage() {
     const newConfig = { ...ollamaConfig, ...updates };
     setOllamaConfig(newConfig);
     localStorage.setItem('ollama-config', JSON.stringify(newConfig));
+
+    // Also update the provider settings in apiKeys
+    if (selectedLLM === 'ollama') {
+      const ollamaProviderConfig = {
+        baseUrl: newConfig.baseUrl,
+        model: newConfig.customModel || newConfig.model,
+        contextLength: newConfig.contextLength,
+        temperature: newConfig.temperature
+      };
+      handleApiKeyChange('ollama-config', JSON.stringify(ollamaProviderConfig));
+    }
   };
 
   // Add this function to handle default LLM change
@@ -717,7 +729,7 @@ export default function SettingsPage() {
                       <SelectTrigger className="w-[180px]">
                         <SelectValue placeholder="Choose default LLM" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-white">
                         {llmProviders.map((provider) => (
                           <SelectItem key={provider.id} value={provider.id}>
                             {provider.name}
@@ -941,11 +953,28 @@ export default function SettingsPage() {
               </div>
               <div className="space-y-2">
                 <Label>Model</Label>
-                <Input
-                  value={ollamaConfig.customModel}
-                  onChange={(e) => handleOllamaConfigChange({ customModel: e.target.value })}
-                  placeholder="Enter model name (e.g., llama2, codellama)"
-                />
+                <Select
+                  value={ollamaConfig.model}
+                  onValueChange={(value) => handleOllamaConfigChange({ model: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select model" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white">
+                    <SelectItem value="llama2">Llama 2</SelectItem>
+                    <SelectItem value="codellama">Code Llama</SelectItem>
+                    <SelectItem value="mistral">Mistral</SelectItem>
+                    <SelectItem value="custom">Custom Model</SelectItem>
+                  </SelectContent>
+                </Select>
+                {ollamaConfig.model === 'custom' && (
+                  <Input
+                    className="mt-2"
+                    placeholder="Enter custom model name"
+                    value={ollamaConfig.customModel}
+                    onChange={(e) => handleOllamaConfigChange({ customModel: e.target.value })}
+                  />
+                )}
               </div>
               <div className="space-y-2">
                 <Label>Context Length</Label>
