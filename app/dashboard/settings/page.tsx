@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react';
-import { useTheme } from "next-themes";
+import { useTheme } from "@/components/theme/theme-provider";
 import { useToast } from "@/components/ui/use-toast";
 import type { UserSettings, CategorySettings } from '@/lib/types';
 import {
@@ -33,7 +33,8 @@ import {
   Check,
   EyeIcon,
   EyeOffIcon,
-  Link
+  Link,
+  Palette
 } from "lucide-react";
 import {
   Dialog,
@@ -60,6 +61,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Label } from "@/components/ui/label";
 import Image from 'next/image';
+import { themes } from "@/lib/themes";
 
 interface LLMProvider {
   id: string;
@@ -82,21 +84,9 @@ interface LLMProvider {
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
-  const [settings, setSettings] = useState<UserSettings>(() => {
-    if (typeof window !== 'undefined') {
-      return {
-        currency: localStorage.getItem('currency') || 'USD',
-        theme: localStorage.getItem('theme') || 'light',
-        notifications: {
-          email: localStorage.getItem('email-notifications') === 'true'
-        }
-      };
-    }
-    return {
-      currency: 'USD',
-      theme: 'light',
-      notifications: { email: true }
-    };
+  const [settings, setSettings] = useState<UserSettings>({
+    currency: 'USD',
+    notifications: { email: true }
   });
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<CategorySettings[]>([]);
@@ -515,7 +505,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-background text-foreground dark:bg-gray-950 dark:text-gray-100">
+    <div className="min-h-screen w-full bg-background text-foreground">
       <div className="w-full h-full p-4 md:p-6 lg:p-8">
         <Card className="h-full">
           <CardHeader className="pb-2">
@@ -555,22 +545,32 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <div className="flex items-center gap-2">
-                      {theme === 'dark' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+                      <Palette className="w-4 h-4" />
                       <label className="font-medium">Theme</label>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      Switch between light and dark mode
+                      Choose your preferred theme
                     </p>
                   </div>
-                  <Switch
-                    checked={theme === 'dark'}
-                    onCheckedChange={(checked) => {
-                      const newTheme = checked ? 'dark' : 'light';
-                      setTheme(newTheme);
-                      handleSettingChange({ theme: newTheme });
+                  <Select
+                    value={theme}
+                    onValueChange={(value) => {
+                      setTheme(value);
+                      localStorage.setItem('app-theme', value);
                     }}
                     disabled={loading}
-                  />
+                  >
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Select theme" />
+                    </SelectTrigger>
+                    <SelectContent className='bg-white'>
+                      {themes.map((t) => (
+                        <SelectItem key={t.name} value={t.name}>
+                          {t.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </section>

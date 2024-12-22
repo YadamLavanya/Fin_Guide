@@ -71,6 +71,29 @@ export interface InsightData {
   };
 }
 
+export interface ChatMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+export interface ChatResponse {
+  content: string;
+  usage?: {
+    prompt_tokens?: number;
+    completion_tokens?: number;
+    total_tokens?: number;
+  };
+}
+
 export interface LLMProvider {
   analyze(data: TransactionData, prompt?: string): Promise<InsightData>;
+  chat?(messages: ChatMessage[]): Promise<ChatResponse>;
+}
+
+export interface LLMCapabilities {
+  supportsChat: boolean;
+  supportsInsights: boolean;
+  maxTokens?: number;
+  supportsFunctionCalling?: boolean;
+  supportsStreaming?: boolean;
 }

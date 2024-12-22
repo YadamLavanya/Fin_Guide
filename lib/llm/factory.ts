@@ -5,7 +5,7 @@ import { CohereProvider } from './providers/cohere';
 import { GroqProvider } from './providers/groq';
 import { OllamaProvider } from './providers/ollama';
 import { MistralProvider } from './providers/mistral';
-import type { LLMProvider } from './types';
+import type { LLMProvider, LLMCapabilities } from './types';
 
 const providers = {
   openai: OpenAIProvider,
@@ -26,6 +26,7 @@ export interface ProviderConfig {
   customModel?: string;
   contextLength?: number;
   temperature?: number;
+  mode?: 'insights' | 'chat';
 }
 
 const DEFAULT_CONFIGS: Record<SupportedProvider, Partial<ProviderConfig>> = {
@@ -43,12 +44,79 @@ const DEFAULT_CONFIGS: Record<SupportedProvider, Partial<ProviderConfig>> = {
   mistral: { model: 'mistral-medium' }
 };
 
+const PROVIDER_CAPABILITIES: Record<SupportedProvider, LLMCapabilities> = {
+  openai: {
+    supportsChat: true,
+    supportsInsights: true,
+    supportsFunctionCalling: true,
+    supportsStreaming: true,
+    maxTokens: 8192
+  },
+  anthropic: {
+    supportsChat: true,
+    supportsInsights: true,
+    supportsFunctionCalling: false,
+    supportsStreaming: true,
+    maxTokens: 100000
+  },
+  gemini: {
+    supportsChat: true,
+    supportsInsights: true,
+    supportsFunctionCalling: true,
+    supportsStreaming: true,
+    maxTokens: 32768
+  },
+  cohere: {
+    supportsChat: false,
+    supportsInsights: true,
+    supportsFunctionCalling: false,
+    supportsStreaming: false,
+    maxTokens: 4096
+  },
+  groq: {
+    supportsChat: true,
+    supportsInsights: true,
+    supportsFunctionCalling: false,
+    supportsStreaming: true,
+    maxTokens: 32768
+  },
+  ollama: {
+    supportsChat: true,
+    supportsInsights: true,
+    supportsFunctionCalling: false,
+    supportsStreaming: true,
+    maxTokens: 4096
+  },
+  mistral: {
+    supportsChat: true,
+    supportsInsights: true,
+    supportsFunctionCalling: false,
+    supportsStreaming: true,
+    maxTokens: 32768
+  }
+};
+
+export function getProviderCapabilities(providerName: SupportedProvider): LLMCapabilities {
+  return PROVIDER_CAPABILITIES[providerName];
+}
+
 export function createLLMProvider(
   providerName: SupportedProvider,
   config: ProviderConfig
 ): LLMProvider {
   const Provider = providers[providerName];
   if (!Provider) throw new Error(`Unsupported provider: ${providerName}`);
+
+  const capabilities = PROVIDER_CAPABILITIES[providerName];
+  const mode = config.mode || 'insights';
+
+  // Validate provider capabilities against requested mode
+  if (mode === 'chat' && !capabilities.supportsChat) {
+    throw new Error(`Provider ${providerName} does not support chat mode`);
+  }
+  if (mode === 'insights' && !capabilities.supportsInsights) {
+    throw new Error(`Provider ${providerName} does not support insights mode`);
+  }
 
   // Special handling for Ollama's customModel
   if (providerName === 'ollama' && config.customModel) {

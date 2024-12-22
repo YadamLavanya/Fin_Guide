@@ -454,8 +454,8 @@ function InsightsSection() {
             </CardHeader>
             <CardContent>
               <ul className="space-y-2">
-                {insights.tips.map((tip, index) => (
-                  <li key={index} className="flex gap-2 items-start bg-muted/50 p-3 rounded-lg">
+                {insights.tips.map((tip) => (
+                  <li key={tip.title || tip.content.substring(0, 20)} className="flex gap-2 items-start bg-muted/50 p-3 rounded-lg">
                     <AlertCircle className="h-4 w-4 mt-1 shrink-0 text-primary" />
                     <span className="text-sm">{tip}</span>
                   </li>
@@ -484,8 +484,8 @@ function InsightsSection() {
                         Your savings rate is {insights.stats.savingsRate.toFixed(1)}%
                       </span>
                     </li>
-                    {insights.stats.topExpenses.map((expense, index) => (
-                      <li key={index} className="flex gap-2 items-start">
+                    {insights.stats.topExpenses.map((expense) => (
+                      <li key={expense.id || expense.description} className="flex gap-2 items-start">
                         <TrendingUp className="h-4 w-4 mt-1 shrink-0 text-primary" />
                         <span className="text-sm text-muted-foreground">
                           {expense.name}: ${expense.totalAmount.toLocaleString()}
@@ -513,14 +513,14 @@ function InsightsSection() {
                 "Rome wasn't built in a day, and neither is financial freedom! 🌟"
               </p>
               <div className="space-y-4">
-                {insights?.goals?.map((goal, index) => {
+                {insights?.goals?.map((goal) => {
                   if (!goal?.category) return null;
                   
                   const progressValue = Math.min(Math.max(0, goal.progress || 0), 100);
                   const isReduction = goal.type === 'reduction';
                   
                   return (
-                    <div key={index} className="space-y-2">
+                    <div key={goal.category} className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
                         <span className="font-medium">{goal.category}</span>
                         <span className={cn(
@@ -574,8 +574,8 @@ function InsightsSection() {
                 {insights?.monthOverMonth?.changes
                   ?.filter(change => Math.abs(change.percentageChange) > 0)
                   .sort((a, b) => Math.abs(b.percentageChange) - Math.abs(a.percentageChange))
-                  .map((change, index) => (
-                    <div key={index} className="flex items-center justify-between">
+                  .map((change) => (
+                    <div key={change.category} className="flex items-center justify-between">
                       <span className="text-sm font-medium">{change.category}</span>
                       <div className="flex items-center gap-2">
                         <span className={`text-sm ${
@@ -607,8 +607,8 @@ function InsightsSection() {
             <CardContent>
               <div className="space-y-3">
                 {insights?.budgetAlerts?.length ? (
-                  insights.budgetAlerts.map((alert, index) => (
-                    <div key={index} 
+                  insights.budgetAlerts.map((alert) => (
+                    <div key={alert.message} 
                       className={`p-3 rounded-lg flex items-start gap-2
                         ${alert.severity === 'high' ? 'bg-red-50 text-red-700' :
                           alert.severity === 'medium' ? 'bg-yellow-50 text-yellow-700' :
@@ -659,8 +659,8 @@ function InsightsSection() {
             </CardHeader>
             <CardContent>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {insights?.categoryAnalysis?.map((category, index) => (
-                  <div key={index} className="flex items-start gap-3 p-4 rounded-lg bg-muted/50">
+                {insights?.categoryAnalysis?.map((category) => (
+                  <div key={category.name} className="flex items-start gap-3 p-4 rounded-lg bg-muted/50">
                     <BarChart className="h-5 w-5 mt-0.5 text-primary shrink-0" />
                     <div className="space-y-1 flex-1">
                       <div className="flex justify-between">

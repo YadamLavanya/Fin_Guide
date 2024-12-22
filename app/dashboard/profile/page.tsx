@@ -159,22 +159,24 @@ export default function ProfilePage() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          firstName: profile.firstName,
+          firstName: profile.firstName || '',
           lastName: profile.lastName,
-          contactInfo: {
-            phone: profile.contactInfo?.phone,
-            avatarUrl
+          contact: {
+            phone: profile.contactInfo?.phone || null,
+            avatarUrl: avatarUrl || null
           },
           preferences: {
-            monthlyBudget: profile.preferences?.monthlyBudget
+            monthlyBudget: Number(profile.preferences?.monthlyBudget) || 0
           }
         }),
       });
 
-      if (!response.ok) throw new Error('Update failed');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Update failed');
+      }
       
-      const updatedProfile = await response.json();
-      setProfile(updatedProfile);
+      await fetchProfile(); // Refresh profile data
       toast({
         title: "Success",
         description: "Your profile has been updated successfully.",
@@ -182,7 +184,7 @@ export default function ProfilePage() {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Could not update your profile. Please try again later.",
+        description: error instanceof Error ? error.message : "Could not update your profile. Please try again later.",
         variant: "destructive",
       });
     } finally {
@@ -235,14 +237,14 @@ export default function ProfilePage() {
             <CardHeader className="pb-2">
               <CardTitle className="text-2xl font-bold">Profile</CardTitle>
             </CardHeader>
-            <CardContent className="flex flex-col gap-8">
+            <CardContent className="flex flex-col gap-4 sm:gap-8">
               {/* Profile Header */}
               <div className="flex flex-col items-center sm:flex-row sm:items-start gap-6">
                 <div className="relative">
                   <Avatar className="h-24 w-24">
-                    <AvatarImage src={profile.contactInfo?.avatarUrl} alt={profile.firstName} />
+                    <AvatarImage src={profile.contactInfo?.avatarUrl} alt={profile.firstName || 'Profile'} />
                     <AvatarFallback>
-                      {profile.firstName[0]}
+                      {profile.firstName?.[0]?.toUpperCase() || '?'}
                     </AvatarFallback>
                   </Avatar>
                   <input
@@ -263,10 +265,12 @@ export default function ProfilePage() {
                   </Button>
                 </div>
                 
-                <div className="flex-1">
-                  <h2 className="text-2xl font-semibold">{profile.firstName}</h2>
-                  <p className="text-sm text-muted-foreground">
-                    Member since {new Date(profile.createdAt).toLocaleDateString()}
+                <div className="flex-1 w-full sm:w-auto">
+                  <h2 className="text-2xl font-semibold text-center sm:text-left">
+                    {profile.firstName || 'User'}
+                  </h2>
+                  <p className="text-sm text-muted-foreground text-center sm:text-left">
+                    Member since {new Date(profile.createdAt || new Date()).toLocaleDateString()}
                   </p>
                   
                   {/* Stats Cards */}
@@ -277,7 +281,7 @@ export default function ProfilePage() {
                         className="rounded-lg border p-3 text-center"
                       >
                         <p className="text-sm text-muted-foreground">{stat.label}</p>
-                        <p className="text-lg font-semibold">{stat.value}</p>
+                        <p className="text-lg font-semibold">{stat.value || '0'}</p>
                       </div>
                     ))}
                   </div>
@@ -288,15 +292,15 @@ export default function ProfilePage() {
               <section>
                 <h3 className="text-lg font-semibold mb-4">Personal Information</h3>
                 <div className="space-y-4">
-                  <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
                     <div className="space-y-2">
                       <label className="text-sm font-medium flex items-center gap-2">
                         <User className="w-4 h-4" />
                         Full Name
                       </label>
                       <Input 
-                        value={profile.firstName}
-                        onChange={e => setProfile({...profile, firstName: e.target.value})}
+                        value={profile.firstName || ''}
+                        onChange={e => setProfile(prev => ({...prev!, firstName: e.target.value}))}
                       />
                     </div>
                     <div className="space-y-2">
@@ -306,7 +310,7 @@ export default function ProfilePage() {
                       </label>
                       <Input 
                         type="email"
-                        value={profile.email}
+                        value={profile.email || ''}
                         readOnly
                         disabled
                         className="bg-muted"
@@ -326,7 +330,7 @@ export default function ProfilePage() {
                           value={profile.contactInfo?.phone || ''}
                           onChange={handlePhoneChange}
                           className={cn(
-                            "PhoneInput",
+                            "PhoneInput w-full",
                             !validatePhone(profile.contactInfo?.phone) && profile.contactInfo?.phone && "PhoneInput--error"
                           )}
                         />
@@ -346,7 +350,15 @@ export default function ProfilePage() {
                       <Input 
                         type="number"
                         value={profile.preferences?.monthlyBudget || 0}
-                        onChange={e => setProfile({...profile, preferences: {...profile.preferences, monthlyBudget: Number(e.target.value)}})}
+                        onChange={e => setProfile(prev => ({
+                          ...prev!,
+                          preferences: {
+                            ...prev!.preferences,
+                            monthlyBudget: Number(e.target.value) || 0
+                          }
+                        }))}
+                        min="0"
+                        step="0.01"
                       />
                     </div>
                   </div>
@@ -359,7 +371,7 @@ export default function ProfilePage() {
                   <h3 className="text-lg font-semibold mb-4">Notifications</h3>
                   <div className="space-y-4 rounded-lg border p-4">
                     <div className="flex items-center gap-2 text-amber-600">
-                      <AlertCircle className="w-4 h-4" />
+                      <AlertCircle className="w-4 h-4 shrink-0" />
                       <p className="text-sm">
                         {getBudgetNotification()}
                       </p>
@@ -368,9 +380,9 @@ export default function ProfilePage() {
                 </section>
               )}
 
-              <div className="flex justify-end gap-4 mt-auto pt-4">
-                <Button variant="outline">Cancel</Button>
-                <Button onClick={handleSaveChanges}>Save Changes</Button>
+              <div className="flex flex-col sm:flex-row justify-end gap-4 mt-auto pt-4">
+                <Button variant="outline" className="w-full sm:w-auto">Cancel</Button>
+                <Button onClick={handleSaveChanges} className="w-full sm:w-auto">Save Changes</Button>
               </div>
             </CardContent>
           </Card>

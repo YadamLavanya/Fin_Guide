@@ -1,7 +1,7 @@
 // loading.tsx
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
-export function ExpensePageSkeleton() {
+export function IncomePageSkeleton() {
   return (
     <div className="min-h-screen w-full bg-background text-foreground dark:bg-gray-950 dark:text-gray-100">
       <div className="w-full h-full p-4 md:p-6 lg:p-8">
@@ -58,4 +58,4 @@ export function ExpensePageSkeleton() {
   );
 }
 
-export default ExpensePageSkeleton;
+export default IncomePageSkeleton;

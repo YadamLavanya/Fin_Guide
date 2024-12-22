@@ -131,18 +131,21 @@ export default function ExpensesPage() {
     direction: "ascending",
   });
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<
-    ExpenseCategory | "all"
-  >("all");
+  const [selectedCategory, setSelectedCategory] = useState<ExpenseCategory | "all">("all");
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
   const [isRecurring, setIsRecurring] = useState(false);
   const [customPaymentMethod, setCustomPaymentMethod] = useState<string>("");
   const [isEditExpenseOpen, setIsEditExpenseOpen] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] =
-    useState<PaymentMethod>("CASH");
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>("CASH");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [dateFilter, setDateFilter] = useState<"all" | "range" | "month">("all");
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
+  const [selectedMonth, setSelectedMonth] = useState<string>("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const fetchExpenses = async () => {
     try {
@@ -349,11 +352,31 @@ export default function ExpensesPage() {
     return 0;
   });
 
-  const filteredData = sortedData.filter(
-    (item) =>
-      item.description.toLowerCase().includes(searchTerm.toLowerCase()) &&
-      (selectedCategory === "all" || item.category.name === selectedCategory)
-  );
+  const filteredData = sortedData.filter((item) => {
+    // Text search filter
+    const matchesSearch = item.description.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Category filter
+    const matchesCategory = selectedCategory === "all" || item.category.name === selectedCategory;
+    
+    // Date filtering
+    let matchesDate = true;
+    const itemDate = new Date(item.date);
+    
+    if (dateFilter === "range" && startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999); // Include the entire end date
+      matchesDate = itemDate >= start && itemDate <= end;
+    } else if (dateFilter === "month" && selectedMonth) {
+      const [year, month] = selectedMonth.split("-");
+      matchesDate = 
+        itemDate.getFullYear() === parseInt(year) &&
+        itemDate.getMonth() === parseInt(month) - 1;
+    }
+    
+    return matchesSearch && matchesCategory && matchesDate;
+  });
 
   const totalAmount = filteredData.reduce((sum, item) => sum + item.amount, 0);
 
@@ -426,6 +449,21 @@ export default function ExpensesPage() {
     setIsAddExpenseOpen(false);
     setIsEditExpenseOpen(false);
     resetFormState();
+  };
+
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+  const paginatedData = filteredData.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    // Scroll to top of the table/cards when page changes
+    const contentElement = document.querySelector('.flex-1.min-h-0');
+    if (contentElement) {
+      contentElement.scrollTop = 0;
+    }
   };
 
   return (
@@ -562,131 +600,306 @@ export default function ExpensesPage() {
 
             <CardContent className="flex-1 flex flex-col gap-4 p-4 overflow-hidden">
               {/* Search controls */}
-              <div className="flex flex-col sm:flex-row gap-4 shrink-0">
-                <Input
-                  type="text"
-                  placeholder="Search expenses..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="max-w-sm"
-                />
-                <Select
-                  value={selectedCategory}
-                  onValueChange={(value) =>
-                    setSelectedCategory(value as ExpenseCategory | "all")
-                  }
-                >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Category" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white dark:bg-zinc-950">
-                    <SelectItem value="all">
-                      <span className="flex items-center gap-2">
-                        All Categories
-                      </span>
-                    </SelectItem>
-                    {Object.entries(ICONS).map(([value, icon]) => (
-                      <SelectItem key={value} value={value}>
+              <div className="flex flex-col gap-4 shrink-0">
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Input
+                    type="text"
+                    placeholder="Search expenses..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full sm:max-w-sm"
+                  />
+                  <Select
+                    value={selectedCategory}
+                    onValueChange={(value) =>
+                      setSelectedCategory(value as ExpenseCategory | "all")
+                    }
+                  >
+                    <SelectTrigger className="w-full sm:w-[180px]">
+                      <SelectValue placeholder="Category" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white dark:bg-zinc-950">
+                      <SelectItem value="all">
                         <span className="flex items-center gap-2">
-                          {icon}
-                          {value}
+                          All Categories
                         </span>
                       </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex-1 min-h-0 rounded-md border">
-                <div className="h-full overflow-auto">
-                  <table className="w-full">
-                    <thead className="bg-muted/50 sticky top-0">
-                      <tr>
-                        {[
-                          "Date",
-                          "Description",
-                          "Category",
-                          "Amount",
-                          "Payment Method",
-                        ].map((header) => (
-                          <th
-                            key={header}
-                            onClick={() =>
-                              handleSort(
-                                header
-                                  .toLowerCase()
-                                  .replace(" ", "") as keyof Expense
-                              )
-                            }
-                            className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider cursor-pointer hover:text-primary"
-                          >
-                            {header}
-                            {sortConfig.key ===
-                              header.toLowerCase().replace(" ", "") && (
-                              <span>
-                                {sortConfig.direction === "ascending"
-                                  ? " ▲"
-                                  : " ▼"}
-                              </span>
-                            )}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredData.map((expense, index) => (
-                        <tr
-                          key={expense.id}
-                          onClick={() => handleRowClick(expense)}
-                          className={`
-${index % 2 === 0 ? "bg-background" : "bg-muted/50"}
-${selectedRows.includes(expense.id) ? "bg-primary/10" : ""}
-hover:bg-muted cursor-pointer transition-colors
-`}
-                        >
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            {new Date(expense.date).toLocaleDateString()}
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-2">
-                              {expense.recurring &&
-                                Object.keys(expense.recurring).length > 0 && (
-                                  <Repeat className="w-4 h-4 text-slate-950" />
-                                )}
-                              {expense.description}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className="flex items-center gap-2">
-                              {ICONS[expense.category.name as ExpenseCategory]}
-                              {expense.category.name}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4">
-                            ${expense.amount.toFixed(2)}
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className="flex items-center gap-2">
-                              {
-                                PAYMENT_METHODS.find(
-                                  (pm) => pm.name === expense.paymentMethod.name
-                                )?.icon
-                              }
-                              {expense.paymentMethod.name.replace("_", " ")}
-                            </span>
-                          </td>
-                        </tr>
+                      {Object.entries(ICONS).map(([value, icon]) => (
+                        <SelectItem key={value} value={value}>
+                          <span className="flex items-center gap-2">
+                            {icon}
+                            {value}
+                          </span>
+                        </SelectItem>
                       ))}
-                    </tbody>
-                  </table>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Date Filter Controls */}
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Select
+                    value={dateFilter}
+                    onValueChange={(value: "all" | "range" | "month") => {
+                      setDateFilter(value);
+                      // Reset other date filters when changing type
+                      setStartDate("");
+                      setEndDate("");
+                      setSelectedMonth("");
+                    }}
+                  >
+                    <SelectTrigger className="w-full sm:w-[180px]">
+                      <SelectValue placeholder="Date Filter" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white">
+                      <SelectItem value="all">All Time</SelectItem>
+                      <SelectItem value="range">Date Range</SelectItem>
+                      <SelectItem value="month">Month</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {dateFilter === "range" && (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="date"
+                          value={startDate}
+                          onChange={(e) => setStartDate(e.target.value)}
+                          className="w-full sm:w-auto"
+                        />
+                        <span className="hidden sm:inline">to</span>
+                        <Input
+                          type="date"
+                          value={endDate}
+                          onChange={(e) => setEndDate(e.target.value)}
+                          className="w-full sm:w-auto"
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {dateFilter === "month" && (
+                    <Input
+                      type="month"
+                      value={selectedMonth}
+                      onChange={(e) => setSelectedMonth(e.target.value)}
+                      className="w-full sm:w-[180px]"
+                    />
+                  )}
                 </div>
               </div>
 
-              <div className="flex justify-between items-center mt-auto pt-4 shrink-0">
-                <p className="text-lg font-semibold">
+              {/* Expense Table/Cards */}
+              <div className="flex-1 min-h-0">
+                {/* Desktop Table View */}
+                <div className="hidden md:block rounded-md border overflow-hidden">
+                  <div className="w-full overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-muted/50 sticky top-0">
+                        <tr>
+                          <th className="w-[15%] px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider cursor-pointer hover:text-primary"
+                            onClick={() => handleSort('date')}
+                          >
+                            Date
+                            {sortConfig.key === 'date' && (
+                              <span>{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>
+                            )}
+                          </th>
+                          <th className="w-[30%] px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider cursor-pointer hover:text-primary"
+                            onClick={() => handleSort('description')}
+                          >
+                            Description
+                            {sortConfig.key === 'description' && (
+                              <span>{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>
+                            )}
+                          </th>
+                          <th className="w-[20%] px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider cursor-pointer hover:text-primary"
+                            onClick={() => handleSort('category')}
+                          >
+                            Category
+                            {sortConfig.key === 'category' && (
+                              <span>{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>
+                            )}
+                          </th>
+                          <th className="w-[15%] px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider cursor-pointer hover:text-primary"
+                            onClick={() => handleSort('amount')}
+                          >
+                            Amount
+                            {sortConfig.key === 'amount' && (
+                              <span>{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>
+                            )}
+                          </th>
+                          <th className="w-[20%] px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider cursor-pointer hover:text-primary"
+                            onClick={() => handleSort('paymentMethod')}
+                          >
+                            Payment Method
+                            {sortConfig.key === 'paymentMethod' && (
+                              <span>{sortConfig.direction === 'ascending' ? ' ▲' : ' ▼'}</span>
+                            )}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {paginatedData.map((expense, index) => (
+                          <tr
+                            key={expense.id}
+                            onClick={() => handleRowClick(expense)}
+                            className={`
+                              ${index % 2 === 0 ? 'bg-background' : 'bg-muted/50'}
+                              ${selectedRows.includes(expense.id) ? 'bg-primary/10' : ''}
+                              hover:bg-muted cursor-pointer transition-colors
+                            `}
+                          >
+                            <td className="w-[15%] px-6 py-4 whitespace-nowrap">
+                              {new Date(expense.date).toLocaleDateString()}
+                            </td>
+                            <td className="w-[30%] px-6 py-4">
+                              <div className="flex items-center gap-2 max-w-[300px]">
+                                {expense.recurring && Object.keys(expense.recurring).length > 0 && (
+                                  <Repeat className="w-4 h-4 shrink-0 text-slate-950" />
+                                )}
+                                <span className="truncate">{expense.description}</span>
+                              </div>
+                            </td>
+                            <td className="w-[20%] px-6 py-4">
+                              <span className="flex items-center gap-2">
+                                {ICONS[expense.category.name as ExpenseCategory]}
+                                <span className="truncate">{expense.category.name}</span>
+                              </span>
+                            </td>
+                            <td className="w-[15%] px-6 py-4 whitespace-nowrap text-destructive">
+                              -${expense.amount.toFixed(2)}
+                            </td>
+                            <td className="w-[20%] px-6 py-4">
+                              <span className="flex items-center gap-2">
+                                {PAYMENT_METHODS.find(pm => pm.name === expense.paymentMethod.name)?.icon}
+                                <span className="truncate">{expense.paymentMethod.name.replace('_', ' ')}</span>
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Mobile Card View */}
+                <div className="md:hidden space-y-4 overflow-y-auto">
+                  {paginatedData.map((expense) => (
+                    <div
+                      key={expense.id}
+                      onClick={() => handleRowClick(expense)}
+                      className="rounded-lg border bg-card p-4 cursor-pointer hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="space-y-1 min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            {expense.recurring && Object.keys(expense.recurring).length > 0 && (
+                              <Repeat className="w-4 h-4 shrink-0 text-slate-950" />
+                            )}
+                            <span className="font-medium truncate">{expense.description}</span>
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            {new Date(expense.date).toLocaleDateString()}
+                          </div>
+                        </div>
+                        <span className="text-destructive font-semibold whitespace-nowrap ml-4">
+                          -${expense.amount.toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="flex flex-col gap-2 mt-3">
+                        <div className="flex items-center gap-2 text-sm">
+                          {ICONS[expense.category.name as ExpenseCategory]}
+                          <span className="truncate">{expense.category.name}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          {PAYMENT_METHODS.find(pm => pm.name === expense.paymentMethod.name)?.icon}
+                          <span className="truncate">{expense.paymentMethod.name.replace('_', ' ')}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Pagination Controls */}
+                {filteredData.length > itemsPerPage && (
+                  <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm">
+                    <div className="text-muted-foreground">
+                      Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredData.length)} of {filteredData.length} entries
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(1)}
+                        disabled={currentPage === 1}
+                      >
+                        First
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                      >
+                        Previous
+                      </Button>
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                          let pageNumber;
+                          if (totalPages <= 5) {
+                            pageNumber = i + 1;
+                          } else if (currentPage <= 3) {
+                            pageNumber = i + 1;
+                          } else if (currentPage >= totalPages - 2) {
+                            pageNumber = totalPages - 4 + i;
+                          } else {
+                            pageNumber = currentPage - 2 + i;
+                          }
+                          return (
+                            <Button
+                              key={i}
+                              variant={currentPage === pageNumber ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => handlePageChange(pageNumber)}
+                              className="w-8"
+                            >
+                              {pageNumber}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                      >
+                        Next
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(totalPages)}
+                        disabled={currentPage === totalPages}
+                      >
+                        Last
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-col sm:flex-row justify-between items-center mt-auto pt-4 gap-4 shrink-0">
+                <p className="text-lg font-semibold order-2 sm:order-1">
                   Total: ${totalAmount.toFixed(2)}
                 </p>
-                <Button variant="outline" size="sm" onClick={handleExport}>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleExport}
+                  className="w-full sm:w-auto order-1 sm:order-2"
+                >
                   <Download className="w-4 h-4 mr-2" />
                   Export
                 </Button>

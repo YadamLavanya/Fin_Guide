@@ -1,18 +1,25 @@
-'use client'
+"use client"
 
-import { ThemeProvider } from 'next-themes'
-import { SessionProvider } from "next-auth/react";
+import { ThemeProvider } from "@/components/theme/theme-provider"
+import { SessionProvider } from "next-auth/react"
+import { SidebarProvider } from "@/components/ui/sidebar"
 
-export function Providers({ children }: { children: React.ReactNode }) {
+interface ProvidersProps {
+  children: React.ReactNode
+}
+
+export function Providers({ children }: ProvidersProps) {
   return (
     <SessionProvider>
       <ThemeProvider
         attribute="class"
-        defaultTheme="light"
+        defaultTheme="system"
         enableSystem
         disableTransitionOnChange
       >
-        {children}
+        <SidebarProvider>
+          {children}
+        </SidebarProvider>
       </ThemeProvider>
     </SessionProvider>
   )

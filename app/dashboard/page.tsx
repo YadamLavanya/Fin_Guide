@@ -4,9 +4,12 @@ import { DashboardSkeleton } from './skeleton';
 import type { DashboardData } from '@/types/dashboard';
 import { 
   LineChart, Line, PieChart, Pie,
-  XAxis, YAxis, CartesianGrid, Tooltip, Cell 
+  XAxis, YAxis, CartesianGrid, Tooltip, Cell,
+  ResponsiveContainer, Area, AreaChart,
+  Legend
 } from "recharts";
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
+import { Progress } from "@/components/ui/progress";
 import { 
   ArrowDownIcon, 
   ArrowUpIcon, 
@@ -17,10 +20,15 @@ import {
   LightbulbIcon,
   Gamepad2Icon,
   BriefcaseIcon,
-  AlertCircleIcon
+  AlertCircleIcon,
+  TrendingUpIcon,
+  TrendingDownIcon,
+  DollarSignIcon
 } from "lucide-react";
 import { EmptyDashboard } from './empty-state';
 import { InsightsSection } from '@/components/insights';
+import { cn } from "@/lib/utils";
+import { motion } from 'framer-motion';
 // Category icon mapping
 const CATEGORY_ICONS = {
   'Housing': HomeIcon,
@@ -31,18 +39,110 @@ const CATEGORY_ICONS = {
   'Salary': BriefcaseIcon,
 } as const;
 
-// Card component
-const Card = ({ title, description, children }: {
+const chartConfig = {
+  amount: {
+    label: "Amount",
+    theme: {
+      light: "hsl(var(--primary))",
+      dark: "hsl(var(--primary))"
+    }
+  },
+  expense: {
+    label: "Expense",
+    theme: {
+      light: "hsl(var(--destructive))",
+      dark: "hsl(var(--destructive))"
+    }
+  },
+  income: {
+    label: "Income",
+    theme: {
+      light: "hsl(var(--success))",
+      dark: "hsl(var(--success))"
+    }
+  }
+};
+
+// Enhanced Card component with optional icon and trend
+const Card = ({ 
+  title, 
+  description, 
+  value,
+  trend,
+  icon: Icon,
+  children 
+}: {
   title: string;
   description: string;
+  value?: string;
+  trend?: number;
+  icon?: React.ElementType;
   children: React.ReactNode;
 }) => (
   <div className="rounded-lg border bg-card p-6 shadow-sm h-full text-card-foreground dark:border-gray-800 dark:bg-gray-900 dark:text-gray-100">
-    <h3 className="font-semibold">{title}</h3>
-    <p className="text-sm text-muted-foreground mb-4 dark:text-gray-400">{description}</p>
+    <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center gap-3">
+        {Icon && (
+          <div className="p-2 rounded-full bg-primary/10 text-primary dark:bg-primary/20">
+            <Icon className="w-5 h-5" />
+          </div>
+        )}
+        <div>
+          <h3 className="font-semibold">{title}</h3>
+          <p className="text-sm text-muted-foreground dark:text-gray-400">{description}</p>
+        </div>
+      </div>
+      {trend !== undefined && (
+        <div className={`flex items-center ${
+          trend > 0 ? 'text-success' : trend < 0 ? 'text-destructive' : 'text-muted-foreground'
+        }`}>
+          {trend > 0 ? <TrendingUpIcon className="w-4 h-4 mr-1" /> : 
+           trend < 0 ? <TrendingDownIcon className="w-4 h-4 mr-1" /> : null}
+          <span className="text-sm font-medium">{Math.abs(trend).toFixed(1)}%</span>
+        </div>
+      )}
+    </div>
+    {value && <div className="text-2xl font-bold mb-4">{value}</div>}
     {children}
   </div>
 );
+
+// Budget Progress component
+const BudgetProgress = ({ spent, budget }: { spent: number; budget: number }) => {
+  const progress = (spent / budget) * 100;
+  const remaining = budget - spent;
+  const isOverBudget = spent > budget;
+
+  return (
+    <div className="space-y-3">
+      <Progress 
+        value={Math.min(progress, 100)} 
+        className={cn(
+          isOverBudget 
+            ? "bg-destructive/20 [&>div]:bg-destructive" 
+            : "bg-success/20 [&>div]:bg-success"
+        )}
+      />
+      <div className="flex justify-between text-sm">
+        <span className="text-muted-foreground">
+          {isOverBudget ? 'Over budget by' : 'Remaining'}: 
+          <span className={cn(
+            "ml-1 font-medium",
+            isOverBudget ? 'text-destructive' : 'text-success'
+          )}>
+            ${Math.abs(remaining).toLocaleString()}
+          </span>
+        </span>
+        <span className={cn(
+          "font-medium",
+          isOverBudget ? 'text-destructive' : 'text-success'
+        )}>
+          {progress.toFixed(1)}% of budget
+        </span>
+      </div>
+    </div>
+  );
+};
 
 // Transaction row component
 const TransactionRow = ({ transaction }: { 
@@ -169,111 +269,187 @@ export default function BudgetDashboard() {
     return <EmptyDashboard />;
   }
 
+  // Calculate savings rate
+  const savingsRate = ((dashboardData.stats.totalIncome - dashboardData.stats.totalSpent) / 
+    dashboardData.stats.totalIncome * 100) || 0;
+
   const statCards = [
     { 
       title: 'Total Spent', 
       value: `$${dashboardData?.stats.totalSpent.toLocaleString() || 0}`,
-      change: `${dashboardData?.stats.changes.totalSpent >= 0 ? '+' : ''}${dashboardData?.stats.changes.totalSpent.toFixed(1)}%` 
+      change: dashboardData?.stats.changes.totalSpent || 0,
+      icon: ShoppingBagIcon,
+      description: 'Total expenses this month'
     },
     { 
-      title: 'Average Daily', 
-      value: `$${dashboardData?.stats.averageDaily.toLocaleString() || 0}`, 
-      change: `${dashboardData?.stats.changes.averageDaily >= 0 ? '+' : ''}${dashboardData?.stats.changes.averageDaily.toFixed(1)}%`
+      title: 'Monthly Income', 
+      value: `$${dashboardData?.stats.totalIncome.toLocaleString() || 0}`,
+      icon: BriefcaseIcon,
+      description: 'Total income this month'
     },
     { 
-      title: 'Monthly Budget', 
-      value: `$${dashboardData?.stats.monthlyBudget.toLocaleString() || 0}`, 
-      change: `${dashboardData?.stats.changes.monthlyBudget}%` 
+      title: 'Savings Rate', 
+      value: `${savingsRate.toFixed(1)}%`,
+      icon: DollarSignIcon,
+      description: 'Percentage of income saved'
     }
   ];
 
-  const COLORS = [
-    'hsl(var(--chart-primary))',
-    'hsl(var(--chart-secondary))',
-    'hsl(var(--chart-success))',
-    'hsl(var(--chart-warning))',
-    'hsl(var(--chart-error))'
-  ];
+  const COLORS = {
+    expense: "hsl(var(--destructive))",
+    income: "hsl(var(--success))",
+    primary: "hsl(var(--primary))",
+    secondary: "hsl(var(--secondary))",
+    muted: "hsl(var(--muted))"
+  };
 
   return (
     <div className="min-h-screen w-full bg-background text-foreground dark:bg-gray-950 dark:text-gray-100">
-      <div className="w-full h-full p-4 md:p-6 lg:p-8">
+      <div className="container mx-auto p-4 md:p-6 lg:p-8 space-y-6">
         <Suspense fallback={<DashboardSkeleton />}>
-          {/* Stats Row - Auto-fit grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 auto-rows-fr gap-4 md:gap-6 mb-6">
-            {statCards.map((stat, index) => (
-              <Card key={index} title={stat.title} description="">
-                <div className="flex justify-between items-end">
-                  <span className="text-2xl font-bold">{stat.value}</span>
-                  <span className={`text-sm ${
-                    stat.change.startsWith('+') ? 'text-chart-success dark:text-chart-success' : 
-                    stat.change.startsWith('-') ? 'text-chart-error dark:text-chart-error' : 
-                    'text-muted-foreground dark:text-muted-foreground'
-                  }`}>{stat.change}</span>
-                </div>
-              </Card>
+          {/* Budget Progress */}
+          <Card
+            title="Monthly Budget"
+            description={`$${dashboardData?.stats.totalSpent.toLocaleString()} spent of $${dashboardData?.stats.monthlyBudget.toLocaleString()}`}
+            icon={DollarSignIcon}
+          >
+            <BudgetProgress 
+              spent={dashboardData?.stats.totalSpent || 0} 
+              budget={dashboardData?.stats.monthlyBudget || 0} 
+            />
+          </Card>
+
+          {/* Stats Row */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {statCards.map((stat) => (
+              <motion.div
+                key={stat.title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                className="col-span-1"
+              >
+                <Card
+                  title={stat.title}
+                  description={stat.description}
+                  value={stat.value}
+                  trend={stat.change}
+                  icon={stat.icon}
+                >
+                  <div className="flex justify-between items-end">
+                    {stat.children}
+                  </div>
+                </Card>
+              </motion.div>
             ))}
           </div>
     
-          {/* Charts Grid - Responsive 12-column grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6">
+          {/* Charts Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Monthly Spending Trends */}
-            <div className="col-span-full lg:col-span-8 min-h-[400px]">
+            <div className="col-span-full lg:col-span-8">
               <Card
                 title="Monthly Spending Trends"
-                description=""
+                description="Your spending patterns over the last 6 months"
+                icon={TrendingUpIcon}
               >
-                <div className="h-full w-full min-h-[300px]">
-                  <ChartContainer config={{}} className="w-full h-full">
-                    <LineChart 
-                      width={500}
-                      height={300}
-                      data={dashboardData?.monthlyTrends || []}
-                      margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis />
-                      <Tooltip content={<ChartTooltipContent />} />
-                      <Line 
-                        type="monotone" 
-                        dataKey="amount" 
-                        stroke="hsl(var(--chart-primary))"
-                        strokeWidth={2} 
-                      />
-                    </LineChart>
+                <div className="mt-6 aspect-[16/9] w-full">
+                  <ChartContainer config={chartConfig}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart 
+                        data={dashboardData?.monthlyTrends || []}
+                        margin={{ top: 5, right: 5, left: -20, bottom: 5 }}
+                      >
+                        <defs>
+                          <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor={COLORS.primary} stopOpacity={0.8}/>
+                            <stop offset="95%" stopColor={COLORS.primary} stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-muted/50" />
+                        <XAxis 
+                          dataKey="month" 
+                          className="text-muted-foreground"
+                          tick={{ fill: 'currentColor', fontSize: 12 }}
+                          axisLine={false}
+                          tickLine={false}
+                          dy={10}
+                        />
+                        <YAxis 
+                          className="text-muted-foreground"
+                          tick={{ fill: 'currentColor', fontSize: 12 }}
+                          tickFormatter={(value) => `$${value.toLocaleString()}`}
+                          axisLine={false}
+                          tickLine={false}
+                          dx={-10}
+                        />
+                        <Tooltip 
+                          content={<ChartTooltipContent 
+                            formatter={(value) => `$${value.toLocaleString()}`}
+                          />} 
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="amount"
+                          stroke={COLORS.primary}
+                          strokeWidth={2}
+                          fillOpacity={1}
+                          fill="url(#colorAmount)"
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
                   </ChartContainer>
                 </div>
               </Card>
             </div>
     
             {/* Expense Categories */}
-            <div className="col-span-full lg:col-span-4 min-h-[400px]">
+            <div className="col-span-full lg:col-span-4">
               <Card
                 title="Expense Categories"
-                description=""
+                description="Distribution of your spending"
+                icon={ShoppingBagIcon}
               >
-                <div className="h-full w-full min-h-[300px]">
-                  <ChartContainer config={{}} className="w-full h-full">
-                    <PieChart width={400} height={300}>
-                      <Pie
-                        data={dashboardData?.expenseCategories || []}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={80}
-                        paddingAngle={5}
-                        dataKey="value"
-                      >
-                        {dashboardData?.expenseCategories.map((entry: any, index: number) => (
-                          <Cell 
-                            key={`cell-${index}`} 
-                            fill={COLORS[index % COLORS.length]} 
-                          />
-                        ))}
-                      </Pie>
-                      <Tooltip content={<ChartTooltipContent />} />
-                    </PieChart>
+                <div className="mt-6 relative aspect-square w-full max-h-[350px]">
+                  <ChartContainer config={chartConfig}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart margin={{ top: 0, right: 0, bottom: 30, left: 0 }}>
+                        <Pie
+                          data={dashboardData?.expenseCategories || []}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius="55%"
+                          outerRadius="80%"
+                          paddingAngle={2}
+                          dataKey="value"
+                          nameKey="name"
+                          label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
+                          labelLine={false}
+                        >
+                          {dashboardData?.expenseCategories.map((entry: any) => (
+                            <Cell 
+                              key={entry.name}
+                              fill={COLORS[entry.name] || COLORS.default}
+                            />
+                          ))}
+                        </Pie>
+                        <Tooltip 
+                          content={<ChartTooltipContent 
+                            formatter={(value) => `$${value.toLocaleString()}`}
+                          />} 
+                        />
+                        <Legend 
+                          verticalAlign="bottom"
+                          align="center"
+                          layout="horizontal"
+                          wrapperStyle={{
+                            bottom: -20,
+                            left: 0,
+                            right: 0,
+                            fontSize: '12px'
+                          }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
                   </ChartContainer>
                 </div>
               </Card>
@@ -283,9 +459,10 @@ export default function BudgetDashboard() {
             <div className="col-span-full">
               <Card
                 title="Recent Transactions"
-                description=""
+                description="Your latest financial activities"
+                icon={DollarSignIcon}
               >
-                <div className="divide-y rounded-md border border-muted dark:border-gray-800 dark:divide-gray-800">
+                <div className="mt-4 divide-y rounded-md border border-muted dark:border-gray-800 dark:divide-gray-800">
                   {dashboardData?.recentTransactions.map((transaction: any) => (
                     <TransactionRow 
                       key={transaction.id} 
@@ -298,7 +475,7 @@ export default function BudgetDashboard() {
           </div>
 
           {/* Add Insights Section */}
-          <section className='pt-4'>
+          <section>
             <InsightsSection />
           </section>
         </Suspense>

@@ -73,12 +73,12 @@ export default function Features() {
       {/* Features Grid */}
       <section className="py-8 sm:py-16 px-4 sm:px-6 lg:px-8 bg-gray-50">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-          {features.map((feature, index) => (
+          {features.map((feature) => (
             <motion.div
-              key={index}
+              key={feature.title}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
+              transition={{ delay: 0.1 }}
             >
               <Card className="h-full transition-all hover:shadow-lg">
                 <CardHeader>
@@ -87,9 +87,9 @@ export default function Features() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-wrap gap-2">
-                    {feature.details.map((detail, idx) => (
+                    {feature.details.map((detail) => (
                       <Badge 
-                        key={idx}
+                        key={`${feature.title}-${detail}`}
                         variant="secondary"
                         className="bg-blue-50 text-blue-700 hover:bg-blue-100"
                       >
