@@ -282,19 +282,78 @@ export async function PUT(req: Request) {
   }
 
   const data = await req.json();
-  const expense = await prisma.expense.update({
-    where: { id: data.id },
-    data: {
-      description: data.description,
-      amount: data.amount,
-      categoryId: data.categoryId,
-      paymentMethodId: data.paymentMethodId,
-      notes: data.notes,
-      originalAmount: data.originalAmount,
-    },
-  });
 
-  return NextResponse.json(expense);
+  try {
+    // Get user and ensure categories exist
+    const user = await prisma.user.findUniqueOrThrow({
+      where: { email: session.user.email },
+      include: {
+        categories: true,
+      }
+    });
+
+    // Find category and payment method
+    const category = user.categories.find(cat => cat.name === data.category);
+    if (!category) {
+      return NextResponse.json(
+        { error: `Category '${data.category}' not found` },
+        { status: 404 }
+      );
+    }
+
+    const paymentMethod = await prisma.paymentMethod.findUnique({
+      where: { name: data.paymentMethod as PaymentMethodEnum },
+    });
+
+    if (!paymentMethod) {
+      return NextResponse.json({ error: 'Invalid payment method' }, { status: 400 });
+    }
+
+    const expense = await prisma.expense.update({
+      where: { id: data.id },
+      data: {
+        description: data.description,
+        amount: data.amount,
+        categoryId: category.id,
+        paymentMethodId: paymentMethod.id,
+        date: new Date(data.date),
+      },
+      include: {
+        category: {
+          select: { name: true, icon: true },
+        },
+        paymentMethod: {
+          select: { name: true },
+        },
+        recurring: {
+          select: {
+            id: true,
+            pattern: {
+              select: {
+                type: true,
+                frequency: true
+              }
+            },
+            startDate: true,
+            endDate: true,
+            nextProcessDate: true
+          }
+        },
+      },
+    });
+
+    return NextResponse.json(expense);
+  } catch (error) {
+    if (error instanceof PrismaClientKnownRequestError) {
+      const errorMessage = getPrismaErrorMessage(error.code);
+      return NextResponse.json({ error: errorMessage }, { status: 400 });
+    }
+    console.error('Expense update error:', error);
+    return NextResponse.json(
+      { error: 'Failed to update expense' },
+      { status: 500 }
+    );
+  }
 }
 
 export async function DELETE(req: Request) {

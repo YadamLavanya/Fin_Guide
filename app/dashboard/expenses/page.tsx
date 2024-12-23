@@ -282,11 +282,21 @@ export default function ExpensesPage() {
       const response = await fetch("/api/expense", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: selectedExpense?.id, ...validatedData }),
+        body: JSON.stringify({
+          id: selectedExpense?.id,
+          description: validatedData.description,
+          amount: validatedData.amount,
+          category: validatedData.category,
+          paymentMethod: selectedPaymentMethod === "OTHER_CUSTOM" 
+            ? customPaymentMethod 
+            : selectedPaymentMethod,
+          date: validatedData.date,
+        }),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to update expense");
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to update expense");
       }
 
       toast({
@@ -300,7 +310,7 @@ export default function ExpensesPage() {
         error instanceof Error ? error.message : "An unknown error occurred";
       toast({
         title: "Error",
-        description: "Could not update expense. Please try again later.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

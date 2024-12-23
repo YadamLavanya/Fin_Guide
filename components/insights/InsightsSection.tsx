@@ -418,24 +418,59 @@ function InsightsSection() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {/* Summary Card with Commentary */}
         {renderSection("overview", 
-          <Card className="col-span-full">
+          <Card className="col-span-full bg-gradient-to-br from-background to-muted">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <BrainCircuit className="h-5 w-5" />
+                <BrainCircuit className="h-5 w-5 text-primary" />
                 Monthly Overview & AI Commentary
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">{insights?.summary}</p>
-              {/* Always render commentary section */}
-              <div className="space-y-2 border-t pt-4">
-                <p className="text-sm font-medium">AI Commentary:</p>
-                {insights?.commentary?.map((comment, idx) => (
-                  <div key={idx} className="flex gap-2 items-start bg-muted/50 p-3 rounded-lg">
-                    <BrainCircuit className="h-4 w-4 mt-1 shrink-0 text-primary" />
-                    <p className="text-sm">
-                      {comment}
-                    </p>
+              <div className="rounded-lg bg-card p-4 border shadow-sm">
+                <p className="text-sm text-muted-foreground leading-relaxed">{insights?.summary}</p>
+              </div>
+              {insights?.commentary && insights.commentary.length > 0 && (
+                <div className="space-y-3 border-t pt-4">
+                  <p className="text-sm font-medium text-foreground">Key Observations:</p>
+                  {insights.commentary.map((comment, idx) => (
+                    <div 
+                      key={`comment-${idx}`} 
+                      className="flex gap-2 items-start bg-primary/5 p-3 rounded-lg border border-primary/10"
+                    >
+                      <BrainCircuit className="h-4 w-4 mt-1 shrink-0 text-primary" />
+                      <p className="text-sm text-foreground/90 leading-relaxed">
+                        {comment}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Smart Tips Section */}
+        {insights?.tips && insights.tips.length > 0 && (
+          <Card className="col-span-full md:col-span-2 bg-gradient-to-br from-background to-muted">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Lightbulb className="h-5 w-5 text-primary" />
+                Smart Financial Tips
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {insights.tips.map((tip, index) => (
+                  <div 
+                    key={`tip-${index}`}
+                    className="flex gap-3 items-start p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                  >
+                    <AlertCircle className="h-5 w-5 mt-0.5 shrink-0 text-primary" />
+                    <div className="space-y-1">
+                      <p className="text-sm leading-relaxed">
+                        {typeof tip === 'object' ? tip.content : tip}
+                      </p>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -443,240 +478,138 @@ function InsightsSection() {
           </Card>
         )}
 
-        {/* Smart Tips Section - Keep separate from Commentary */}
-        {insights?.tips && insights.tips.length > 0 && (
-          <Card className="col-span-full">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Lightbulb className="h-5 w-5" />
-                Smart Tips
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2">
-                {insights.tips.map((tip) => (
-                  <li key={tip.title || tip.content.substring(0, 20)} className="flex gap-2 items-start bg-muted/50 p-3 rounded-lg">
-                    <AlertCircle className="h-4 w-4 mt-1 shrink-0 text-primary" />
-                    <span className="text-sm">{tip}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Insights Cards */}
+        {/* Key Metrics Card */}
         {renderSection("insights", 
-          <Card>
+          <Card className="bg-gradient-to-br from-background to-muted">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <BarChart className="h-5 w-5" />
-                Key Insights
+                <BarChart className="h-5 w-5 text-primary" />
+                Key Metrics
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <ul className="space-y-2">
+              <div className="space-y-4">
                 {insights.stats && (
                   <>
-                    <li className="flex gap-2 items-start">
-                      <TrendingUp className="h-4 w-4 mt-1 shrink-0 text-primary" />
-                      <span className="text-sm text-muted-foreground">
-                        Your savings rate is {insights.stats.savingsRate.toFixed(1)}%
-                      </span>
-                    </li>
-                    {insights.stats.topExpenses.map((expense) => (
-                      <li key={expense.id || expense.description} className="flex gap-2 items-start">
-                        <TrendingUp className="h-4 w-4 mt-1 shrink-0 text-primary" />
-                        <span className="text-sm text-muted-foreground">
-                          {expense.name}: ${expense.totalAmount.toLocaleString()}
+                    <div className="p-4 rounded-lg border bg-card">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium">Savings Rate</span>
+                        <span className={cn(
+                          "text-sm font-semibold",
+                          insights.stats.savingsRate > 20 ? "text-green-500" : 
+                          insights.stats.savingsRate > 10 ? "text-yellow-500" : 
+                          "text-red-500"
+                        )}>
+                          {insights.stats.savingsRate.toFixed(1)}%
                         </span>
-                      </li>
-                    ))}
+                      </div>
+                      <Progress 
+                        value={Math.min(insights.stats.savingsRate, 100)} 
+                        className="h-2"
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <span className="text-sm font-medium">Top Expenses</span>
+                      {insights.stats.topExpenses.map((expense, idx) => (
+                        <div 
+                          key={`expense-${idx}-${expense.name}`}
+                          className="flex items-center justify-between p-3 rounded-lg border bg-card"
+                        >
+                          <div className="flex items-center gap-2">
+                            <TrendingUp className="h-4 w-4 text-primary" />
+                            <span className="text-sm">{expense.name}</span>
+                          </div>
+                          <span className="text-sm font-medium">
+                            ${expense.totalAmount.toLocaleString()}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </>
                 )}
-              </ul>
+              </div>
             </CardContent>
           </Card>
         )}
 
-        {/* New: Financial Goals
-        {renderSection("goals", 
-          <Card className="col-span-full md:col-span-1">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5" />
-                Financial Goals
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground italic mb-4">
-                "Rome wasn't built in a day, and neither is financial freedom! 🌟"
-              </p>
-              <div className="space-y-4">
-                {insights?.goals?.map((goal) => {
-                  if (!goal?.category) return null;
-                  
-                  const progressValue = Math.min(Math.max(0, goal.progress || 0), 100);
-                  const isReduction = goal.type === 'reduction';
-                  
-                  return (
-                    <div key={goal.category} className="space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="font-medium">{goal.category}</span>
-                        <span className={cn(
-                          "text-muted-foreground",
-                          isReduction && goal.current > goal.target ? "text-red-500" : "text-green-500"
-                        )}>
-                          {goal.current.toLocaleString('en-US', {
-                            style: 'currency',
-                            currency: 'USD'
-                          })} / {goal.target.toLocaleString('en-US', {
-                            style: 'currency',
-                            currency: 'USD'
-                          })}
-                        </span>
-                      </div>
-                      <div className="relative pt-4">
-                        <Progress 
-                          value={progressValue}
-                          variant={isReduction ? 'warning' : 'success'}
-                          className={cn(
-                            "h-2",
-                            isReduction ? "bg-red-100" : "bg-green-100"
-                          )}
-                        />
-                        <span className="absolute right-0 top-0 text-xs text-muted-foreground">
-                          {Math.round(progressValue)}%
-                        </span>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {goal.description}
-                      </p>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        )} */}
-
-        {/* Update Monthly Comparisons section */}
+        {/* Monthly Comparisons section */}
         {renderSection("comparisons", 
-          <Card>
+          <Card className="col-span-full bg-gradient-to-br from-background to-muted">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <ArrowUpDown className="h-5 w-5" />
-                Notable Changes
+                <ArrowUpDown className="h-5 w-5 text-primary" />
+                Monthly Changes
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {insights?.monthOverMonth?.changes
-                  ?.filter(change => Math.abs(change.percentageChange) > 0)
-                  .sort((a, b) => Math.abs(b.percentageChange) - Math.abs(a.percentageChange))
-                  .map((change) => (
-                    <div key={change.category} className="flex items-center justify-between">
-                      <span className="text-sm font-medium">{change.category}</span>
-                      <div className="flex items-center gap-2">
-                        <span className={`text-sm ${
-                          change.percentageChange > 0 ? 'text-red-600' : 'text-green-600'
-                        }`}>
-                          {change.percentageChange > 0 ? '↑' : '↓'}
-                          {Math.abs(change.percentageChange).toFixed(1)}%
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          (${change.currentAmount.toLocaleString()})
-                        </span>
-                      </div>
-                    </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Budget Alerts section with null checks */}
-        {renderSection("alerts", 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bell className="h-5 w-5" />
-                Budget Alerts
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {insights?.budgetAlerts?.length ? (
-                  insights.budgetAlerts.map((alert) => (
-                    <div key={alert.message} 
-                      className={`p-3 rounded-lg flex items-start gap-2
-                        ${alert.severity === 'high' ? 'bg-red-50 text-red-700' :
-                          alert.severity === 'medium' ? 'bg-yellow-50 text-yellow-700' :
-                          'bg-blue-50 text-blue-700'}`}>
-                      <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-                      <div className="space-y-1 flex-1">
-                        <p className="text-sm font-medium">{alert.message}</p>
-                        <div className="flex justify-between text-xs">
-                          <span>
-                            ${alert.current?.toLocaleString()} / ${alert.limit?.toLocaleString()}
-                          </span>
-                          <div className="flex items-center gap-1">
-                            <div className="w-20 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                              <div 
-                                className={`h-full ${
-                                  alert.severity === 'high' ? 'bg-red-500' :
-                                  alert.severity === 'medium' ? 'bg-yellow-500' :
-                                  'bg-blue-500'
-                                }`}
-                                style={{ width: `${Math.min(100, alert.percentage)}%` }}
-                              />
-                            </div>
-                            <span>{alert.percentage.toFixed(0)}%</span>
+              <div className="relative">
+                <div className="grid grid-flow-col auto-cols-[minmax(200px,1fr)] gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-primary/10 scrollbar-track-transparent hover:scrollbar-thumb-primary/20">
+                  {insights?.monthOverMonth?.changes
+                    ?.filter(change => Math.abs(change.percentageChange) > 0)
+                    .sort((a, b) => Math.abs(b.percentageChange) - Math.abs(a.percentageChange))
+                    .map((change, idx) => (
+                      <div 
+                        key={`change-${idx}-${change.category}`}
+                        className="p-3 rounded-lg border bg-card h-full"
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-sm font-medium">{change.category}</span>
+                          <div className="flex items-center gap-2">
+                            <span className={cn(
+                              "text-sm font-semibold",
+                              change.percentageChange > 0 ? "text-red-500" : "text-green-500"
+                            )}>
+                              {change.percentageChange > 0 ? '↑' : '↓'}
+                              {Math.abs(change.percentageChange).toFixed(1)}%
+                            </span>
                           </div>
                         </div>
+                        <div className="text-xs text-muted-foreground">
+                          ${change.previousAmount.toLocaleString()} → ${change.currentAmount.toLocaleString()}
+                        </div>
                       </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-muted-foreground text-center">
-                    Looking good! No budget alerts at this time. 🎉
-                  </p>
-                )}
+                    ))}
+                </div>
               </div>
             </CardContent>
           </Card>
         )}
 
-
-        {/* New: Category Breakdown */}
+        {/* Category Analysis */}
         {renderSection("categories", 
-          <Card className="col-span-full">
+          <Card className="col-span-full bg-gradient-to-br from-background to-muted">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Boxes className="h-5 w-5" />
+                <Boxes className="h-5 w-5 text-primary" />
                 Spending Categories Analysis
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {insights?.categoryAnalysis?.map((category) => (
-                  <div key={category.name} className="flex items-start gap-3 p-4 rounded-lg bg-muted/50">
-                    <BarChart className="h-5 w-5 mt-0.5 text-primary shrink-0" />
-                    <div className="space-y-1 flex-1">
-                      <div className="flex justify-between">
-                        <span className="font-medium">{category.name}</span>
-                        <span className="text-muted-foreground">
-                          {category.percentage.toFixed(1)}%
-                        </span>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
+                {insights?.categoryAnalysis?.map((category, idx) => (
+                  <div 
+                    key={`category-${idx}-${category.name}`}
+                    className="flex flex-col gap-2 p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">{category.name}</span>
+                      <span className="text-sm text-muted-foreground">
+                        {category.percentage.toFixed(1)}%
+                      </span>
+                    </div>
+                    <div className="relative pt-1">
+                      <Progress value={category.percentage} className="h-2" />
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">
                         ${category.totalAmount.toLocaleString()}
-                      </p>
+                      </span>
                       {category.trend !== 0 && (
-                        <span className={`text-xs ${
-                          category.trend > 0 ? 'text-red-500' : 'text-green-500'
-                        }`}>
-                          {category.trend > 0 ? '↑' : '↓'} {Math.abs(category.trend).toFixed(1)}% vs last month
+                        <span className={cn(
+                          "text-xs",
+                          category.trend > 0 ? "text-red-500" : "text-green-500"
+                        )}>
+                          {category.trend > 0 ? '↑' : '↓'} {Math.abs(category.trend).toFixed(1)}%
                         </span>
                       )}
                     </div>
