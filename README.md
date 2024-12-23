@@ -3,7 +3,7 @@
 **Curiopay** is a free, open-source budget tracking app that provides intelligent insights into your spending using Local Language Model (LLM) providers. It allows users to track expenses, set budgets, and interact with AI for personalized financial advice. With robust security and privacy features, Curiopay also lets you choose from a variety of LLM providers, manage your data securely, and easily deploy the app locally.
 
 **Project Status**: Actively developed  
-**Last Updated**: 21.12.2024  
+**Last Updated**: 23.12.2024  
 **License**: [MIT](LICENSE)
 
 ---
@@ -53,14 +53,16 @@ With **Curiopay**, users can:
 
 ### Core Features
 
-- **Expense Tracking**: Record and categorize your expenses by type (e.g., groceries, rent, entertainment), with the ability to track payment methods and dates. Set recurring expenses for daily, weekly, or monthly tracking.
+- **Enhanced Financial Dashboard**: A modern, paginated interface for expense and income listings, with improved loading states and user interaction components.
+- **Intelligent Chat System**: Advanced chat functionality with Markdown support for better message rendering and improved financial assistance.
+- **Expense Management**: Record and categorize your expenses with robust validation for categories and payment methods, providing informative error feedback.
 - **Budget Notifications**: Set a budget in your profile, and get notified if you exceed it via in-app notifications and email alerts.
-- **Multiple LLM Providers**: Curiopay supports multiple LLM providers for local deployment, including Groq and Ollama, with Cohere integration almost complete. Support for other providers such as Gemini, Anthropic, OpenAI, and Azure is in development.
+- **Multiple LLM Providers**: Curiopay supports multiple LLM providers for local deployment, including Groq and Ollama, with Cohere integration almost complete.
 - **AI Insights**: Use AI models to analyze your spending patterns and get actionable recommendations to optimize your finances.
 - **Recurring Expenses**: Set automatic tracking for recurring payments to keep a clear view of your subscriptions and regular bills.
-- **Data Export**: Export your financial data (expenses and income) in CSV or JSON format after email verification. This makes it easy to back up your data or perform further analysis.
-- **Security**: API keys are stored securely in your browser, ensuring maximum protection for your data. Local deployment options are available for full control over your environment.
-- **Email Verification**: Email verification is required for notifications and data export functionality, ensuring security and privacy.
+- **Data Export**: Export your financial data (expenses and income) in CSV or JSON format after email verification.
+- **Security**: API keys are stored securely in your browser, ensuring maximum protection for your data.
+- **Email Verification**: Email verification is required for notifications and data export functionality.
 
 ### In Progress Features
 
