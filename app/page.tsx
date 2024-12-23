@@ -122,24 +122,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* New Stats Section */}
-      {/* <section className="py-16 px-4 bg-white">
-        <div className="max-w-7xl mx-auto">
-          <motion.div 
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            className="grid md:grid-cols-3 gap-8 text-center"
-          >
-            {[
-            ].map((item, index) => (
-              <div key={index} className="p-6">
-                <h3 className="text-4xl font-bold text-blue-600 mb-2">{item.stat}</h3>
-                <p className="text-gray-600">{item.label}</p>
-              </div>
-            ))}
-          </motion.div>
-        </div>
-      </section> */}
 
       {/* New Benefits Section */}
       <section className="py-16 px-4 bg-gray-50">
