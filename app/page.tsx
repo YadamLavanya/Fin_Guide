@@ -65,7 +65,7 @@ const faqs = [
 ];
 
 const stats = [
-  { label: "LLM Providers", value: "3+", prefix: "" },
+  { label: "LLM Providers", value: "7+", prefix: "" },
   { label: "Core Features", value: "10+", prefix: "" },
   { label: "License", value: "MIT", prefix: "" },
   { label: "Cost", value: "Free", prefix: "100%" }
