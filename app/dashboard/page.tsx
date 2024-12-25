@@ -270,8 +270,10 @@ export default function BudgetDashboard() {
   }
 
   // Calculate savings rate
-  const savingsRate = ((dashboardData.stats.totalIncome - dashboardData.stats.totalSpent) / 
-    dashboardData.stats.totalIncome * 100) || 0;
+  const savingsRate = dashboardData.stats.totalIncome === 0 
+    ? 0 
+    : ((dashboardData.stats.totalIncome - dashboardData.stats.totalSpent) / 
+      dashboardData.stats.totalIncome * 100);
 
   const statCards = [
     { 
