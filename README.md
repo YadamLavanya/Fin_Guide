@@ -62,32 +62,42 @@ With **Curiopay**, users can:
 
 ---
 
+## Features Overview
+
+| Feature Category | Features |
+|------------------|----------|
+| **In Progress**  | Responsive UI for Mobile and Themes, More LLM Providers |
+| **Planned**      | Support for Additional LLM Providers, Advanced Analytics, Mobile App, Receipt Scanning |
+
+---
+
 ## Features
 
 ### Core Features
 
-- **Enhanced Financial Dashboard**: A modern, paginated interface for expense and income listings, with improved loading states and user interaction components.
-- **Intelligent Chat System**: Advanced chat functionality with Markdown support for better message rendering and improved financial assistance.
-- **Expense Management**: Record and categorize your expenses with robust validation for categories and payment methods, providing informative error feedback.
-- **Budget Notifications**: Set a budget in your profile, and get notified if you exceed it via in-app notifications and email alerts.
-- **Multiple LLM Providers**: Curiopay supports multiple LLM providers for local deployment, including Groq and Ollama, with Cohere integration almost complete.
-- **AI Insights**: Use AI models to analyze your spending patterns and get actionable recommendations to optimize your finances.
-- **Recurring Expenses**: Set automatic tracking for recurring payments to keep a clear view of your subscriptions and regular bills.
-- **Data Export**: Export your financial data (expenses and income) in CSV or JSON format after email verification.
-- **Security**: API keys are stored securely in your browser, ensuring maximum protection for your data.
-- **Email Verification**: Email verification is required for notifications and data export functionality.
+- **Enhanced Financial Dashboard**: Navigate your financial data with a modern interface featuring pagination and interactive components.
+- **Intelligent Chat System**: Use Markdown-supported chat for clear communication and financial insights.
+- **Expense Management**: Record and categorize expenses with robust validation and error feedback.
+- **Budget Notifications**: Receive real-time alerts when your budget is exceeded via in-app notifications and email.
+- **Multiple LLM Providers**: Choose from various LLM providers for local deployment, including Groq and Ollama.
+- **AI Insights**: Analyze spending patterns with AI models for actionable financial recommendations.
+- **Recurring Expenses**: Automate tracking of recurring payments for better financial management.
+- **Data Export**: Export financial data in CSV or JSON format after email verification.
+- **Security**: Secure API key storage in your browser for maximum data protection.
+- **Email Verification**: Mandatory email verification for notifications and data export.
+- **Chat with LLM**: Engage with LLM for personalized financial insights and advice.
 
 ### In Progress Features
 
-- **Dark Mode**: Dark mode is currently in development and will be available soon for a more comfortable experience in low-light environments.
-- **Chat with LLM**: This feature is under development. Soon, users will be able to chat with integrated LLMs to receive financial insights and advice based on their data.
-- **Cohere Integration**: The integration with Cohere's API is almost complete, allowing users to choose between multiple LLM providers.
+- **Responsive UI for Mobile and Themes**: Work is ongoing to make the UI responsive for mobile devices and to add theme support.
+- **More LLM Providers**: Most LLM providers have been integrated, though still in beta testing.
 
 ### Planned Features
 
-- **Support for Additional LLM Providers**: Future updates will bring support for Gemini, Anthropic, OpenAI, and Azure for more flexible and advanced AI-powered financial insights.
 - **Advanced Analytics**: We plan to introduce predictive spending, trend analysis, and AI-driven budget recommendations.
 - **Mobile App**: A mobile version of the app is in the planning phase for better on-the-go financial management.
+- **Receipt Scanning**: Receipt scanning is in the planning phase for better expense tracking.
+- **Support for Additional LLM Providers**: Future updates will bring support for more LLM providers.
 
 ---
 
@@ -100,7 +110,6 @@ Before you begin, make sure you have the following installed:
 - [Node.js](https://nodejs.org/) (version 14.x or higher)
 - [npm](https://www.npmjs.com/) (Node Package Manager)
 - [Docker](https://www.docker.com/products/docker-desktop) (for running the PostgreSQL server in a container)
-- [Python 3.x](https://www.python.org/downloads/) (for backend functionality)
 
 ### Local Deployment
 
@@ -140,6 +149,7 @@ If you want an easy setup, the `setup.sh` script automates the installation and 
    SMTP_PASS=your-email-password
    SMTP_FROM=your-email@gmail.com
    NEXT_PUBLIC_APP_URL=http://localhost:3000
+   CRON_SECRET=your-cron-secret
    ```
 
    Replace the placeholder values with your own information:
