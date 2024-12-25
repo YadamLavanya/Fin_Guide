@@ -41,6 +41,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
@@ -718,12 +719,12 @@ export default function SettingsPage() {
           <CardHeader className="pb-2">
             <CardTitle className="text-2xl font-bold">Settings</CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-col gap-8">
+          <CardContent className="flex flex-col gap-4 sm:gap-8">
             {/* Preferences */}
             <section>
-              <h2 className="text-lg font-semibold mb-4">Preferences</h2>
+              <h2 className="text-lg font-semibold mb-2 sm:mb-4">Preferences</h2>
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
                   <div className="space-y-0.5">
                     <div className="flex items-center gap-2">
                       <Globe className="w-4 h-4" />
@@ -738,7 +739,7 @@ export default function SettingsPage() {
                     onValueChange={(value) => handleSettingChange({ currency: value })}
                     disabled={loading}
                   >
-                    <SelectTrigger className="w-[180px]">
+                    <SelectTrigger className="w-full sm:w-[180px]">
                       <SelectValue placeholder="Select currency" />
                     </SelectTrigger>
                     <SelectContent className='bg-white'>
@@ -748,45 +749,14 @@ export default function SettingsPage() {
                     </SelectContent>
                   </Select>
                 </div>
-{/* 
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <div className="flex items-center gap-2">
-                      <Palette className="w-4 h-4" />
-                      <label className="font-medium">Theme</label>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Choose your preferred theme
-                    </p>
-                  </div>
-                  <Select
-                    value={theme}
-                    onValueChange={(value) => {
-                      setTheme(value);
-                      localStorage.setItem('app-theme', value);
-                    }}
-                    disabled={loading}
-                  >
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Select theme" />
-                    </SelectTrigger>
-                    <SelectContent className='bg-white'>
-                      {themes.map((t) => (
-                        <SelectItem key={t.name} value={t.name}>
-                          {t.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div> */}
               </div>
             </section>
 
             {/* Notifications */}
             <section>
-              <h2 className="text-lg font-semibold mb-4">Notifications</h2>
+              <h2 className="text-lg font-semibold mb-2 sm:mb-4">Notifications</h2>
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
                   <div className="space-y-0.5">
                     <div className="flex items-center gap-2">
                       <Bell className="w-4 h-4" />
@@ -809,119 +779,11 @@ export default function SettingsPage() {
               </div>
             </section>
 
-            {/* Categories
+            {/* AI Settings */}
             <section>
-              <h2 className="text-lg font-semibold mb-4">Categories</h2>
+              <h2 className="text-lg font-semibold mb-2 sm:mb-4">AI Settings</h2>
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <div className="flex items-center gap-2">
-                      <Tags className="w-4 h-4" />
-                      <label className="font-medium">Manage Categories</label>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Add, edit, or remove expense categories
-                    </p>
-                  </div>
-                  <Button 
-                    variant="outline"
-                    onClick={() => setShowCategoryDialog(true)}
-                    disabled={loading}
-                  >
-                    Manage
-                  </Button>
-                </div>
-              </div>
-
-              <Dialog open={showCategoryDialog} onOpenChange={setShowCategoryDialog}>
-                <DialogContent className="sm:max-w-[425px]">
-                  <DialogHeader>
-                    <DialogTitle>Manage Categories</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <Button
-                      onClick={() => {
-                        setEditingCategory({ id: '', name: '', isDefault: false });
-                        setShowCategoryDialog(true);
-                      }}
-                    >
-                      Add New Category
-                    </Button>
-                    <div className="space-y-2">
-                      {categories.map((category) => (
-                        <div key={category.id} className="flex items-center justify-between p-2 rounded-lg border">
-                          <span>{category.name}</span>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() => setEditingCategory(category)}
-                              >
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                className="text-red-600"
-                                onClick={() => handleCategoryAction('delete', category)}
-                              >
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
-
-              <Dialog open={!!editingCategory} onOpenChange={(open) => !open && setEditingCategory(null)}>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>
-                      {editingCategory?.id ? 'Edit' : 'Add'} Category
-                    </DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <label>Name</label>
-                      <Input
-                        value={editingCategory?.name || ''}
-                        onChange={(e) => setEditingCategory({
-                          ...editingCategory!,
-                          name: e.target.value
-                        })}
-                      />
-                    </div>
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="outline"
-                        onClick={() => setEditingCategory(null)}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        onClick={() => handleCategoryAction(
-                          editingCategory?.id ? 'update' : 'create',
-                          editingCategory!
-                        )}
-                      >
-                        Save
-                      </Button>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </section> */}
-
-            {/* Add this new section before Data Management */}
-            <section>
-              <h2 className="text-lg font-semibold mb-4">AI Settings</h2>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
                   <div className="space-y-0.5">
                     <div className="flex items-center gap-2">
                       <Brain className="w-4 h-4" />
@@ -931,9 +793,9 @@ export default function SettingsPage() {
                       Choose your preferred AI language model
                     </p>
                   </div>
-                  <div className="flex items-center gap-4">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
                     <Select value={defaultLLM} onValueChange={handleDefaultLLMChange}>
-                      <SelectTrigger className="w-[180px]">
+                      <SelectTrigger className="w-full sm:w-[180px]">
                         <SelectValue placeholder="Choose default LLM" />
                       </SelectTrigger>
                       <SelectContent className="bg-white">
@@ -958,9 +820,9 @@ export default function SettingsPage() {
 
             {/* Data Management */}
             <section>
-              <h2 className="text-lg font-semibold mb-4">Data Management</h2>
+              <h2 className="text-lg font-semibold mb-2 sm:mb-4">Data Management</h2>
               <div className="space-y-4">
-                <div className="flex gap-4">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
                   <Button
                     variant="outline"
                     className="flex items-center gap-2"
@@ -970,22 +832,6 @@ export default function SettingsPage() {
                     <Download className="w-4 h-4" />
                     Export Data
                   </Button>
-                  {/* <Button
-                    variant="outline"
-                    className="flex items-center gap-2"
-                    onClick={() => document.getElementById('import-input')?.click()}
-                    disabled={loading}
-                  >
-                    <Upload className="w-4 h-4" />
-                    Import Data
-                  </Button>
-                  <input
-                    id="import-input"
-                    type="file"
-                    accept=".csv"
-                    className="hidden"
-                    onChange={handleDataImport}
-                  /> */}
                   <Button
                     variant="destructive"
                     className="flex items-center gap-2"
@@ -1001,9 +847,9 @@ export default function SettingsPage() {
 
             {/* Account Actions */}
             <section>
-              <h2 className="text-lg font-semibold mb-4 text-red-600">Danger Zone</h2>
-              <div className="space-y-4 border-2 border-red-200 rounded-lg p-4">
-                <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold mb-2 sm:mb-4 text-red-600">Danger Zone</h2>
+              <div className="space-y-4 border-2 border-red-200 rounded-lg p-3 sm:p-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
                   <div>
                     <h3 className="font-medium">Delete Account</h3>
                     <p className="text-sm text-muted-foreground">
@@ -1013,6 +859,7 @@ export default function SettingsPage() {
                   <Button
                     variant="destructive"
                     onClick={() => setShowDeleteAccountDialog(true)}
+                    className="w-full sm:w-auto"
                   >
                     Delete Account
                   </Button>
@@ -1098,12 +945,12 @@ export default function SettingsPage() {
         </AlertDialogContent>
       </AlertDialog>
       <Dialog open={showLLMDialog} onOpenChange={setShowLLMDialog}>
-        <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold">Choose Language Model</DialogTitle>
+        <DialogContent className="sm:max-w-[800px] w-[95vw] max-h-[90vh] p-6 overflow-hidden flex flex-col">
+          <DialogHeader className="flex-shrink-0">
+            <DialogTitle className="text-2xl font-bold">Choose Language Model</DialogTitle>
           </DialogHeader>
           
-          <Alert className="my-4">
+          <Alert className="mt-4 mb-6">
             <InfoIcon className="h-4 w-4" />
             <AlertTitle>New Providers Available!</AlertTitle>
             <AlertDescription>
@@ -1113,58 +960,60 @@ export default function SettingsPage() {
             </AlertDescription>
           </Alert>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
-            {llmProviders.map((provider) => (
-              <div
-                key={provider.id}
-                className={`relative cursor-pointer group`}
-                onClick={() => {
-                  setSelectedLLM(provider.id);
-                  setShowProviderConfig(true);
-                }}
-              >
-                <div className={`
-                  p-6 rounded-lg border-2 
-                  ${selectedLLM === provider.id ? 'border-primary bg-primary/5' : 'border-border'}
-                  hover:border-primary hover:bg-primary/5 transition-all
-                  aspect-square flex flex-col items-center justify-center gap-4
-                  bg-card relative
-                `}>
-                  <div className="w-16 h-16 relative mb-2">
-                    <Image
-                      src={provider.svgPath}
-                      alt={provider.name}
-                      fill
-                      className="object-contain"
-                    />
-                  </div>
-                  <div className="text-center">
-                    <h3 className="font-semibold text-lg mb-1">{provider.name}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {provider.description}
-                    </p>
-                  </div>
-                  {selectedLLM === provider.id && (
-                    <div className="absolute top-3 right-3">
-                      <Check className="w-5 h-5 text-primary" />
+          <div className="flex-1 overflow-y-auto pr-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {llmProviders.map((provider) => (
+                <div
+                  key={provider.id}
+                  className={`relative cursor-pointer group`}
+                  onClick={() => {
+                    setSelectedLLM(provider.id);
+                    setShowProviderConfig(true);
+                  }}
+                >
+                  <div className={`
+                    p-6 rounded-lg border-2 
+                    ${selectedLLM === provider.id ? 'border-primary bg-primary/5' : 'border-border'}
+                    hover:border-primary hover:bg-primary/5 transition-all
+                    aspect-square flex flex-col items-center justify-center gap-4
+                    bg-card relative
+                  `}>
+                    <div className="w-12 h-12 relative mb-2">
+                      <Image
+                        src={provider.svgPath}
+                        alt={provider.name}
+                        fill
+                        className="object-contain"
+                      />
                     </div>
-                  )}
-                  {provider.id !== 'ollama' && provider.requiresApiKey && (
-                    <div className="absolute bottom-3 right-3">
-                      <Link className="w-4 h-4 text-muted-foreground" />
+                    <div className="text-center">
+                      <h3 className="font-semibold text-lg">{provider.name}</h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {provider.description}
+                      </p>
                     </div>
-                  )}
+                    {selectedLLM === provider.id && (
+                      <div className="absolute top-2 right-2">
+                        <Check className="w-5 h-5 text-primary" />
+                      </div>
+                    )}
+                    {provider.id !== 'ollama' && provider.requiresApiKey && (
+                      <div className="absolute bottom-2 right-2">
+                        <Link className="w-4 h-4 text-muted-foreground" />
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </DialogContent>
       </Dialog>
 
       <Dialog open={showProviderConfig} onOpenChange={setShowProviderConfig}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold flex items-center gap-3">
+        <DialogContent className="sm:max-w-[600px] w-[95vw] h-[90vh] sm:h-auto max-h-[90vh] p-6 overflow-hidden flex flex-col gap-6 bg-background">
+          <DialogHeader className="flex-shrink-0 space-y-2">
+            <DialogTitle className="text-2xl font-bold flex items-center gap-3">
               <div className="w-8 h-8 relative">
                 <Image
                   src={llmProviders.find(p => p.id === selectedLLM)?.svgPath || ''}
@@ -1175,270 +1024,277 @@ export default function SettingsPage() {
               </div>
               Configure {llmProviders.find(p => p.id === selectedLLM)?.name}
             </DialogTitle>
+            <DialogDescription>
+              Configure your settings for {llmProviders.find(p => p.id === selectedLLM)?.name}
+            </DialogDescription>
           </DialogHeader>
 
-          {selectedLLM === 'ollama' ? (
-            <div className="space-y-6 py-4">
-              <div className="space-y-2">
-                <Label className="text-base">Base URL</Label>
-                <Input
-                  value={ollamaConfig.baseUrl}
-                  onChange={(e) => handleOllamaConfigChange({ baseUrl: e.target.value })}
-                  placeholder="http://localhost:11434"
-                  className="font-mono"
-                />
-                <p className="text-sm text-muted-foreground">
-                  The URL where your Ollama instance is running
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-base">Model</Label>
-                <Select
-                  value={ollamaConfig.model}
-                  onValueChange={(value) => handleOllamaConfigChange({ model: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select model" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white">
-                    <SelectItem value="llama2">Llama 2</SelectItem>
-                    <SelectItem value="codellama">Code Llama</SelectItem>
-                    <SelectItem value="mistral">Mistral</SelectItem>
-                    <SelectItem value="custom">Custom Model</SelectItem>
-                  </SelectContent>
-                </Select>
-                {ollamaConfig.model === 'custom' && (
-                  <div className="mt-2 space-y-2">
-                    <Label>Custom Model Name</Label>
+          <div className="flex-1 overflow-y-auto">
+            <div className="pr-2 space-y-6">
+              {selectedLLM === 'ollama' ? (
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <Label className="text-base font-medium">Base URL</Label>
                     <Input
-                      placeholder="Enter custom model name"
-                      value={ollamaConfig.customModel}
-                      onChange={(e) => handleOllamaConfigChange({ customModel: e.target.value })}
+                      value={ollamaConfig.baseUrl}
+                      onChange={(e) => handleOllamaConfigChange({ baseUrl: e.target.value })}
+                      placeholder="http://localhost:11434"
                       className="font-mono"
                     />
+                    <p className="text-sm text-muted-foreground">
+                      The URL where your Ollama instance is running
+                    </p>
                   </div>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label className="text-base">Context Length</Label>
-                <Input
-                  type="number"
-                  value={ollamaConfig.contextLength}
-                  onChange={(e) => handleOllamaConfigChange({ contextLength: parseInt(e.target.value) })}
-                  min={1}
-                  max={32768}
-                  className="font-mono"
-                />
-                <p className="text-sm text-muted-foreground">
-                  Maximum number of tokens to consider for context (1-32768)
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-base">Temperature</Label>
-                <Input
-                  type="number"
-                  value={ollamaConfig.temperature}
-                  onChange={(e) => handleOllamaConfigChange({ temperature: parseFloat(e.target.value) })}
-                  min={0}
-                  max={2}
-                  step={0.1}
-                  className="font-mono"
-                />
-                <p className="text-sm text-muted-foreground">
-                  Controls randomness in responses (0.0-2.0)
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-6 py-4">
-              {llmProviders.find(p => p.id === selectedLLM)?.extraSettings?.modelOptions && (
-                <div className="space-y-2">
-                  <Label className="text-base">Model</Label>
-                  <Select
-                    value={providerConfigs[selectedLLM]?.model || llmProviders.find(p => p.id === selectedLLM)?.extraSettings?.modelOptions?.[0]}
-                    onValueChange={(value) => handleProviderConfigChange(selectedLLM, { model: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select model" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {llmProviders.find(p => p.id === selectedLLM)?.extraSettings?.modelOptions?.map(model => (
-                        <SelectItem key={model} value={model}>
-                          {model}
-                        </SelectItem>
-                      ))}
-                      {llmProviders.find(p => p.id === selectedLLM)?.extraSettings?.customModel && (
+                  <div className="space-y-2">
+                    <Label className="text-base font-medium">Model</Label>
+                    <Select
+                      value={ollamaConfig.model}
+                      onValueChange={(value) => handleOllamaConfigChange({ model: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select model" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white">
+                        <SelectItem value="llama2">Llama 2</SelectItem>
+                        <SelectItem value="codellama">Code Llama</SelectItem>
+                        <SelectItem value="mistral">Mistral</SelectItem>
                         <SelectItem value="custom">Custom Model</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {ollamaConfig.model === 'custom' && (
+                      <div className="mt-2 space-y-2">
+                        <Label>Custom Model Name</Label>
+                        <Input
+                          placeholder="Enter custom model name"
+                          value={ollamaConfig.customModel}
+                          onChange={(e) => handleOllamaConfigChange({ customModel: e.target.value })}
+                          className="font-mono"
+                        />
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-base font-medium">Context Length</Label>
+                    <Input
+                      type="number"
+                      value={ollamaConfig.contextLength}
+                      onChange={(e) => handleOllamaConfigChange({ contextLength: parseInt(e.target.value) })}
+                      min={1}
+                      max={32768}
+                      className="font-mono"
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Maximum number of tokens to consider for context (1-32768)
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-base font-medium">Temperature</Label>
+                    <Input
+                      type="number"
+                      value={ollamaConfig.temperature}
+                      onChange={(e) => handleOllamaConfigChange({ temperature: parseFloat(e.target.value) })}
+                      min={0}
+                      max={2}
+                      step={0.1}
+                      className="font-mono"
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Controls randomness in responses (0.0-2.0)
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {llmProviders.find(p => p.id === selectedLLM)?.extraSettings?.modelOptions && (
+                    <div className="space-y-2">
+                      <Label className="text-base font-medium">Model</Label>
+                      <Select
+                        value={providerConfigs[selectedLLM]?.model || llmProviders.find(p => p.id === selectedLLM)?.extraSettings?.modelOptions?.[0]}
+                        onValueChange={(value) => handleProviderConfigChange(selectedLLM, { model: value })}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select model" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {llmProviders.find(p => p.id === selectedLLM)?.extraSettings?.modelOptions?.map(model => (
+                            <SelectItem key={model} value={model}>
+                              {model}
+                            </SelectItem>
+                          ))}
+                          {llmProviders.find(p => p.id === selectedLLM)?.extraSettings?.customModel && (
+                            <SelectItem value="custom">Custom Model</SelectItem>
+                          )}
+                        </SelectContent>
+                      </Select>
+                      {providerConfigs[selectedLLM]?.model === 'custom' && (
+                        <div className="mt-2 space-y-2">
+                          <Label className="font-medium">Custom Model Name</Label>
+                          <Input
+                            placeholder="Enter custom model name"
+                            value={providerConfigs[selectedLLM]?.customModelName || ''}
+                            onChange={(e) => handleProviderConfigChange(selectedLLM, { customModelName: e.target.value })}
+                            className="font-mono"
+                          />
+                          <p className="text-sm text-muted-foreground">
+                            Enter the exact model name/ID as specified by the provider
+                          </p>
+                        </div>
                       )}
-                    </SelectContent>
-                  </Select>
-                  {providerConfigs[selectedLLM]?.model === 'custom' && (
-                    <div className="mt-2 space-y-2">
-                      <Label>Custom Model Name</Label>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-base font-medium">API Key</Label>
+                      {llmProviders.find(p => p.id === selectedLLM)?.apiKeyLink && (
+                        <a
+                          href={llmProviders.find(p => p.id === selectedLLM)?.apiKeyLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-primary hover:underline flex items-center gap-1"
+                        >
+                          Get API Key <Link className="h-3 w-3" />
+                        </a>
+                      )}
+                    </div>
+                    <div className="relative">
                       <Input
-                        placeholder="Enter custom model name"
-                        value={providerConfigs[selectedLLM]?.customModelName || ''}
-                        onChange={(e) => handleProviderConfigChange(selectedLLM, { customModelName: e.target.value })}
-                        className="font-mono"
+                        type={showApiKey[selectedLLM] ? 'text' : 'password'}
+                        value={apiKeys[selectedLLM] || ''}
+                        onChange={(e) => handleApiKeyChange(selectedLLM, e.target.value)}
+                        placeholder={llmProviders.find(p => p.id === selectedLLM)?.apiKeyPlaceholder}
+                        className="font-mono pr-10"
                       />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-2 top-1/2 -translate-y-1/2"
+                        onClick={() => setShowApiKey(prev => ({
+                          ...prev,
+                          [selectedLLM]: !prev[selectedLLM]
+                        }))}
+                      >
+                        {showApiKey[selectedLLM] ? (
+                          <EyeOffIcon className="h-4 w-4" />
+                        ) : (
+                          <EyeIcon className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {llmProviders.find(p => p.id === selectedLLM)?.extraSettings?.maxTokens && (
+                    <div className="space-y-2">
+                      <Label className="text-base font-medium">Max Tokens</Label>
+                      <div className="flex gap-4 items-center">
+                        <Input
+                          type="range"
+                          min={1}
+                          max={32000}
+                          step={1}
+                          value={providerConfigs[selectedLLM]?.maxTokens || 4000}
+                          onChange={(e) => handleProviderConfigChange(selectedLLM, { maxTokens: parseInt(e.target.value) })}
+                          className="flex-1"
+                        />
+                        <Input
+                          type="number"
+                          min={1}
+                          max={32000}
+                          value={providerConfigs[selectedLLM]?.maxTokens || 4000}
+                          onChange={(e) => handleProviderConfigChange(selectedLLM, { maxTokens: parseInt(e.target.value) })}
+                          className="w-24 font-mono"
+                        />
+                      </div>
                       <p className="text-sm text-muted-foreground">
-                        Enter the exact model name/ID as specified by the provider
+                        Maximum number of tokens to generate in the response
                       </p>
                     </div>
                   )}
-                </div>
-              )}
 
-              {llmProviders.find(p => p.id === selectedLLM)?.extraSettings?.maxTokens && (
-                <div className="space-y-2">
-                  <Label className="text-base">Max Tokens</Label>
-                  <div className="flex gap-4 items-center">
-                    <Input
-                      type="range"
-                      min={1}
-                      max={32000}
-                      step={1}
-                      value={providerConfigs[selectedLLM]?.maxTokens || 4000}
-                      onChange={(e) => handleProviderConfigChange(selectedLLM, { maxTokens: parseInt(e.target.value) })}
-                      className="flex-1"
-                    />
-                    <Input
-                      type="number"
-                      min={1}
-                      max={32000}
-                      value={providerConfigs[selectedLLM]?.maxTokens || 4000}
-                      onChange={(e) => handleProviderConfigChange(selectedLLM, { maxTokens: parseInt(e.target.value) })}
-                      className="w-24 font-mono"
-                    />
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Maximum number of tokens to generate in the response
-                  </p>
-                </div>
-              )}
+                  {llmProviders.find(p => p.id === selectedLLM)?.extraSettings?.baseUrl && (
+                    <div className="space-y-2">
+                      <Label className="text-base font-medium">Base URL</Label>
+                      <Input
+                        value={providerConfigs[selectedLLM]?.baseUrl || ''}
+                        onChange={(e) => handleProviderConfigChange(selectedLLM, { baseUrl: e.target.value })}
+                        placeholder="https://your-azure-endpoint.openai.azure.com"
+                        className="font-mono"
+                      />
+                    </div>
+                  )}
 
-              {llmProviders.find(p => p.id === selectedLLM)?.extraSettings?.baseUrl && (
-                <div className="space-y-2">
-                  <Label className="text-base">Base URL</Label>
-                  <Input
-                    value={providerConfigs[selectedLLM]?.baseUrl || ''}
-                    onChange={(e) => handleProviderConfigChange(selectedLLM, { baseUrl: e.target.value })}
-                    placeholder="https://your-azure-endpoint.openai.azure.com"
-                    className="font-mono"
-                  />
-                </div>
-              )}
+                  {llmProviders.find(p => p.id === selectedLLM)?.extraSettings?.temperature && (
+                    <div className="space-y-2">
+                      <Label className="text-base font-medium">Temperature</Label>
+                      <div className="flex gap-4 items-center">
+                        <Input
+                          type="range"
+                          min={0}
+                          max={2}
+                          step={0.1}
+                          value={providerConfigs[selectedLLM]?.temperature || 0.7}
+                          onChange={(e) => handleProviderConfigChange(selectedLLM, { temperature: parseFloat(e.target.value) })}
+                          className="flex-1"
+                        />
+                        <Input
+                          type="number"
+                          min={0}
+                          max={2}
+                          step={0.1}
+                          value={providerConfigs[selectedLLM]?.temperature || 0.7}
+                          onChange={(e) => handleProviderConfigChange(selectedLLM, { temperature: parseFloat(e.target.value) })}
+                          className="w-20 font-mono"
+                        />
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Controls randomness in responses (0.0-2.0)
+                      </p>
+                    </div>
+                  )}
 
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="text-base">API Key</Label>
-                  {llmProviders.find(p => p.id === selectedLLM)?.apiKeyLink && (
-                    <a
-                      href={llmProviders.find(p => p.id === selectedLLM)?.apiKeyLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-primary hover:underline flex items-center gap-1"
-                    >
-                      Get API Key <Link className="h-3 w-3" />
-                    </a>
+                  {llmProviders.find(p => p.id === selectedLLM)?.extraSettings?.systemPrompt && (
+                    <div className="space-y-2">
+                      <Label className="text-base font-medium">System Prompt</Label>
+                      <textarea
+                        value={providerConfigs[selectedLLM]?.systemPrompt || ''}
+                        onChange={(e) => handleProviderConfigChange(selectedLLM, { systemPrompt: e.target.value })}
+                        placeholder="Enter a system prompt to guide the model's behavior..."
+                        className="w-full h-32 px-3 py-2 text-sm rounded-md border border-input bg-background font-mono resize-none"
+                      />
+                      <p className="text-sm text-muted-foreground">
+                        Custom instructions to control the model's behavior and personality
+                      </p>
+                    </div>
+                  )}
+
+                  {selectedLLM === 'azure' && (
+                    <Alert>
+                      <InfoIcon className="h-4 w-4" />
+                      <AlertTitle>Azure Configuration</AlertTitle>
+                      <AlertDescription>
+                        Make sure to provide both the API key and the Azure endpoint URL. The model field should match your Azure deployment name.
+                      </AlertDescription>
+                    </Alert>
                   )}
                 </div>
-                <div className="relative">
-                  <Input
-                    type={showApiKey[selectedLLM] ? 'text' : 'password'}
-                    value={apiKeys[selectedLLM] || ''}
-                    onChange={(e) => handleApiKeyChange(selectedLLM, e.target.value)}
-                    placeholder={llmProviders.find(p => p.id === selectedLLM)?.apiKeyPlaceholder}
-                    className="font-mono pr-10"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-2 top-1/2 -translate-y-1/2"
-                    onClick={() => setShowApiKey(prev => ({
-                      ...prev,
-                      [selectedLLM]: !prev[selectedLLM]
-                    }))}
-                  >
-                    {showApiKey[selectedLLM] ? (
-                      <EyeOffIcon className="h-4 w-4" />
-                    ) : (
-                      <EyeIcon className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-              </div>
-
-              {llmProviders.find(p => p.id === selectedLLM)?.extraSettings?.temperature && (
-                <div className="space-y-2">
-                  <Label className="text-base">Temperature</Label>
-                  <div className="flex gap-4 items-center">
-                    <Input
-                      type="range"
-                      min={0}
-                      max={2}
-                      step={0.1}
-                      value={providerConfigs[selectedLLM]?.temperature || 0.7}
-                      onChange={(e) => handleProviderConfigChange(selectedLLM, { temperature: parseFloat(e.target.value) })}
-                      className="flex-1"
-                    />
-                    <Input
-                      type="number"
-                      min={0}
-                      max={2}
-                      step={0.1}
-                      value={providerConfigs[selectedLLM]?.temperature || 0.7}
-                      onChange={(e) => handleProviderConfigChange(selectedLLM, { temperature: parseFloat(e.target.value) })}
-                      className="w-20 font-mono"
-                    />
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Controls randomness in responses (0.0-2.0)
-                  </p>
-                </div>
-              )}
-
-              {llmProviders.find(p => p.id === selectedLLM)?.extraSettings?.systemPrompt && (
-                <div className="space-y-2">
-                  <Label className="text-base">System Prompt</Label>
-                  <textarea
-                    value={providerConfigs[selectedLLM]?.systemPrompt || ''}
-                    onChange={(e) => handleProviderConfigChange(selectedLLM, { systemPrompt: e.target.value })}
-                    placeholder="Enter a system prompt to guide the model's behavior..."
-                    className="w-full h-32 px-3 py-2 text-sm rounded-md border border-input bg-background font-mono"
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    Custom instructions to control the model's behavior and personality
-                  </p>
-                </div>
-              )}
-
-              {selectedLLM === 'azure' && (
-                <Alert>
-                  <InfoIcon className="h-4 w-4" />
-                  <AlertTitle>Azure Configuration</AlertTitle>
-                  <AlertDescription>
-                    Make sure to provide both the API key and the Azure endpoint URL. The model field should match your Azure deployment name.
-                  </AlertDescription>
-                </Alert>
               )}
             </div>
-          )}
+          </div>
 
-          <div className="flex justify-end gap-3 mt-6">
+          <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t flex-shrink-0">
+            <Button
+              variant="outline"
+              onClick={() => handleResetProviderConfig(selectedLLM)}
+              className="order-last sm:order-first sm:mr-auto"
+            >
+              Reset to Default
+            </Button>
             <Button
               variant="outline"
               onClick={() => setShowProviderConfig(false)}
             >
               Cancel
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => handleResetProviderConfig(selectedLLM)}
-              className="mr-auto"
-            >
-              Reset to Default
             </Button>
             <Button
               onClick={() => {

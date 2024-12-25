@@ -174,10 +174,10 @@ export default function ChatPage() {
 
   return (
     <div className="min-h-screen w-full bg-background p-4 md:p-6 lg:p-8">
-      <Card className="max-w-4xl mx-auto shadow-lg">
-        <div className="flex flex-col h-[80vh]">
+      <Card className="max-w-4xl mx-auto shadow-lg rounded-xl overflow-hidden">
+        <div className="flex flex-col h-[80vh] rounded-xl">
           {/* Chat Header */}
-          <div className="border-b p-4 bg-card">
+          <div className="border-b p-4 bg-card rounded-t-xl">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-full bg-primary/10">
@@ -248,7 +248,7 @@ export default function ChatPage() {
                     )}
                   </div>
                   <div className={cn(
-                    "rounded-lg p-4 max-w-[85%] shadow-sm",
+                    "rounded-xl p-4 max-w-[85%] shadow-sm",
                     message.role === 'assistant'
                       ? 'bg-card text-card-foreground prose prose-sm max-w-none'
                       : 'bg-primary text-primary-foreground'
@@ -291,7 +291,7 @@ export default function ChatPage() {
           </div>
 
           {/* Input Form */}
-          <form onSubmit={handleSubmit} className="border-t p-4 bg-card">
+          <form onSubmit={handleSubmit} className="border-t p-4 bg-card rounded-b-xl">
             <div className="flex gap-2">
               <Input
                 value={input}
