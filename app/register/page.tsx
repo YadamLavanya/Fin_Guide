@@ -4,11 +4,13 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { IconBrandGoogle } from "@tabler/icons-react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import zxcvbn from 'zxcvbn';
 import { useSession } from "next-auth/react";
+import { motion } from "framer-motion";
+import { ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function SignupForm() {
   const [loading, setLoading] = useState(false);
@@ -73,7 +75,6 @@ export default function SignupForm() {
     }
 
     try {
-      // Create user using the signup API
       const response = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -90,7 +91,6 @@ export default function SignupForm() {
         throw new Error(data.error || "Failed to create account");
       }
 
-      // Sign in the user after successful signup
       const result = await signIn("credentials", {
         email,
         password,
@@ -110,92 +110,151 @@ export default function SignupForm() {
     }
   };
 
-  const handleGoogleSignIn = () => {
-    signIn("google", { callbackUrl: "/dashboard" });
-  };
-
   return (
-    <div className="max-w-md w-full mx-auto rounded-none md:rounded-2xl p-4 md:p-8 shadow-input bg-white dark:bg-black">
-      <Link href="/" className="text-sm text-neutral-600 dark:text-neutral-300 mb-4 block hover:text-neutral-800 dark:hover:text-neutral-100">
-        ← Back to home
-      </Link>
-      <h2 className="font-bold text-xl text-neutral-800 dark:text-neutral-200">
-        Welcome to Curiopay
-      </h2>
-      <p className="text-neutral-600 text-sm max-w-sm mt-2 dark:text-neutral-300">
-        Sign up to continue to Curiopay
-      </p>
-
-      <form className="my-8" onSubmit={handleSubmit}>
-        <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 mb-4">
-          <LabelInputContainer className="mb-4">
-            <Label htmlFor="firstname">First Name</Label>
-            <Input id="firstname" placeholder="John" type="text" required />
-          </LabelInputContainer>
-          <LabelInputContainer className="mb-4">
-            <Label htmlFor="lastname">Last Name</Label>
-            <Input id="lastname" placeholder="Doe" type="text" required />
-          </LabelInputContainer>
-        </div>
-        <LabelInputContainer className="mb-4">
-          <Label htmlFor="email">Email Address</Label>
-          <Input id="email" placeholder="someone@example.com" type="email" required />
-        </LabelInputContainer>
-        <LabelInputContainer className="mb-4">
-          <Label htmlFor="password">Password</Label>
-          <Input id="password" placeholder="•••••••" type="password" required />
-        </LabelInputContainer>
-        <LabelInputContainer className="mb-8">
-          <Label htmlFor="confirm-password">Confirm Password</Label>
-          <Input id="confirm-password" placeholder="•••••••" type="password" required />
-        </LabelInputContainer>
-
-        {passwordError && <p className="text-red-500 mt-2 mb-4">{passwordError}</p>}
-        {formError && <p className="text-red-500 mt-2">{formError}</p>}
-
-        <button
-          className="bg-gradient-to-br relative group/btn from-black dark:from-zinc-900 dark:to-zinc-900 to-neutral-600 block dark:bg-zinc-800 w-full text-white rounded-md h-10 font-medium shadow-[0px_1px_0px_0px_#ffffff40_inset,0px_-1px_0px_0px_#ffffff40_inset] dark:shadow-[0px_1px_0px_0px_var(--zinc-800)_inset,0px_-1px_0px_0px_var(--zinc-800)_inset]"
-          type="submit"
-          disabled={loading}
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="flex min-h-screen items-center justify-center p-4">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-md"
         >
-          {loading ? "Signing up..." : "Sign up"} &rarr;
-          <BottomGradient />
-        </button>
+          <div className="rounded-2xl border bg-card p-8 shadow-lg">
+            <Link href="/" className="inline-flex items-center text-primary hover:text-primary/90 mb-8 group">
+              <ArrowLeft className="w-4 h-4 mr-2 transition-transform group-hover:-translate-x-1" />
+              <span>Back to home</span>
+            </Link>
 
-        <div className="mt-4">
-          <Link href="/login">
-            Already have an account? Sign in
-          </Link>
-        </div>
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold text-foreground mb-2">
+                Create Your Account
+              </h2>
+              <p className="text-muted-foreground">
+                Join CurioPay to start managing your finances
+              </p>
+            </div>
 
-        <div className="bg-gradient-to-r from-transparent via-neutral-300 dark:via-neutral-700 to-transparent my-8 h-[1px] w-full" />
+            <form className="space-y-6" onSubmit={handleSubmit}>
+              <div className="grid grid-cols-2 gap-4">
+                <LabelInputContainer>
+                  <Label htmlFor="firstname" className="text-foreground">First Name</Label>
+                  <Input 
+                    id="firstname" 
+                    placeholder="John" 
+                    type="text" 
+                    required
+                    className="h-12 bg-background border-input"
+                  />
+                </LabelInputContainer>
+                <LabelInputContainer>
+                  <Label htmlFor="lastname" className="text-foreground">Last Name</Label>
+                  <Input 
+                    id="lastname" 
+                    placeholder="Doe" 
+                    type="text" 
+                    required
+                    className="h-12 bg-background border-input"
+                  />
+                </LabelInputContainer>
+              </div>
 
-        <div className="flex flex-col space-y-4">
-          <button
-            className="relative group/btn flex space-x-2 items-center justify-start px-4 w-full text-black rounded-md h-10 font-medium shadow-input bg-gray-50 dark:bg-zinc-900 dark:shadow-[0px_0px_1px_1px_var(--neutral-800)]"
-            type="button"
-            onClick={handleGoogleSignIn}
-          >
-            <IconBrandGoogle className="h-4 w-4 text-neutral-800 dark:text-neutral-300" />
-            <span className="text-neutral-700 dark:text-neutral-300 text-sm">
-              Sign up with Google
-            </span>
-            <BottomGradient />
-          </button>
-        </div>
-      </form>
+              <LabelInputContainer>
+                <Label htmlFor="email" className="text-foreground">Email Address</Label>
+                <Input 
+                  id="email" 
+                  placeholder="you@example.com" 
+                  type="email" 
+                  required
+                  className="h-12 bg-background border-input"
+                />
+              </LabelInputContainer>
+
+              <LabelInputContainer>
+                <Label htmlFor="password" className="text-foreground">Password</Label>
+                <Input 
+                  id="password" 
+                  placeholder="••••••••" 
+                  type="password" 
+                  required
+                  className="h-12 bg-background border-input"
+                />
+              </LabelInputContainer>
+
+              <LabelInputContainer>
+                <Label htmlFor="confirm-password" className="text-foreground">Confirm Password</Label>
+                <Input 
+                  id="confirm-password" 
+                  placeholder="••••••••" 
+                  type="password" 
+                  required
+                  className="h-12 bg-background border-input"
+                />
+              </LabelInputContainer>
+
+              {passwordError && (
+                <motion.p 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-destructive text-sm"
+                >
+                  {passwordError}
+                </motion.p>
+              )}
+
+              {formError && (
+                <motion.p 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-destructive text-sm"
+                >
+                  {formError}
+                </motion.p>
+              )}
+
+              <div className="space-y-4">
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground"
+                >
+                  {loading ? "Creating account..." : "Create Account"}
+                </Button>
+
+                <div className="text-center">
+                  <Link 
+                    href="/login" 
+                    className="text-primary hover:text-primary/90 text-sm"
+                  >
+                    Already have an account? Sign in
+                  </Link>
+                </div>
+              </div>
+
+              {/* Commented out Google Sign Up
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-input"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-card text-muted-foreground">Or continue with</span>
+                </div>
+              </div>
+
+              <button
+                className="w-full h-12 flex items-center justify-center gap-2 border border-input rounded-lg text-foreground hover:bg-accent transition-colors"
+                type="button"
+                onClick={handleGoogleSignIn}
+              >
+                <IconBrandGoogle className="h-5 w-5" />
+                <span>Sign up with Google</span>
+              </button>
+              */}
+            </form>
+          </div>
+        </motion.div>
+      </div>
     </div>
   );
 }
-
-const BottomGradient = () => {
-  return (
-    <>
-      <span className="group-hover/btn:opacity-100 block transition duration-500 opacity-0 absolute h-px w-full -bottom-px inset-x-0 bg-gradient-to-r from-transparent via-cyan-500 to-transparent" />
-      <span className="group-hover/btn:opacity-100 blur-sm block transition duration-500 opacity-0 absolute h-px w-1/2 mx-auto -bottom-px inset-x-10 bg-gradient-to-r from-transparent via-indigo-500 to-transparent" />
-    </>
-  );
-};
 
 const LabelInputContainer = ({
   children,
@@ -205,7 +264,7 @@ const LabelInputContainer = ({
   className?: string;
 }) => {
   return (
-    <div className={cn("flex flex-col space-y-2 w-full", className)}>
+    <div className={cn("flex flex-col space-y-2", className)}>
       {children}
     </div>
   );

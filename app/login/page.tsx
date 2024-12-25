@@ -1,16 +1,19 @@
-// components/signin/signin-form.tsx
 "use client";
 import React, { useState, useEffect } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { signIn, useSession } from "next-auth/react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { IconBrandGoogle } from "@tabler/icons-react";
+import Link from "next/link";
+import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { motion } from "framer-motion";
+import { ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-export default function SignInForm() {
-  const [error, setError] = useState<string | null>(null);
+export default function LoginForm() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const router = useRouter();
   const { data: session, status } = useSession();
 
@@ -26,111 +29,133 @@ export default function SignInForm() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const email = (
-      e.currentTarget.elements.namedItem("email") as HTMLInputElement
-    ).value;
-    const password = (
-      e.currentTarget.elements.namedItem("password") as HTMLInputElement
-    ).value;
+    setLoading(true);
+    setError("");
+
+    const email = (e.currentTarget.elements.namedItem("email") as HTMLInputElement).value;
+    const password = (e.currentTarget.elements.namedItem("password") as HTMLInputElement).value;
 
     try {
       const result = await signIn("credentials", {
-        redirect: false,
         email,
         password,
+        redirect: false,
         callbackUrl: "/dashboard"
       });
 
       if (result?.error) {
-        setError(result.error);
+        throw new Error(result.error);
       } else if (result?.url) {
         router.push(result.url);
       }
-    } catch (error) {
-      setError("An error occurred during sign in");
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleGoogleSignIn = () => {
-    signIn("google", { callbackUrl: "/dashboard" });
-  };
-
   return (
-    <div className="max-w-md w-full mx-auto rounded-none md:rounded-2xl p-4 md:p-8 shadow-input bg-white dark:bg-black">
-      <Link href="/" className="text-sm text-neutral-600 dark:text-neutral-300 mb-4 block hover:text-neutral-800 dark:hover:text-neutral-100">
-        ← Back to home
-      </Link>
-      <h2 className="font-bold text-xl text-neutral-800 dark:text-neutral-200">
-        Welcome Back to Curiopay
-      </h2>
-      <p className="text-neutral-600 text-sm max-w-sm mt-2 dark:text-neutral-300">
-        Sign in to continue to Curiopay
-      </p>
-
-      <form className="my-8" onSubmit={handleSubmit}>
-        <LabelInputContainer className="mb-4">
-          <Label htmlFor="email">Email Address</Label>
-          <Input id="email" placeholder="someone@example.com" type="email" />
-        </LabelInputContainer>
-        <LabelInputContainer className="mb-4">
-          <Label htmlFor="password">Password</Label>
-          <Input id="password" placeholder="••••••••" type="password" />
-        </LabelInputContainer>
-
-        <button
-          className="bg-gradient-to-br relative group/btn from-black dark:from-zinc-900 dark:to-zinc-900 to-neutral-600 block dark:bg-zinc-800 w-full text-white rounded-md h-10 font-medium shadow-[0px_1px_0px_0px_#ffffff40_inset,0px_-1px_0px_0px_#ffffff40_inset] dark:shadow-[0px_1px_0px_0px_var(--zinc-800)_inset,0px_-1px_0px_0px_var(--zinc-800)_inset]"
-          type="submit"
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="flex min-h-screen items-center justify-center p-4">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-md"
         >
-          Sign in &rarr;
-          <BottomGradient />
-        </button>
-        {error && <p className="text-red-500 mt-2">{error}</p>}
+          <div className="rounded-2xl border bg-card p-8 shadow-lg">
+            <Link href="/" className="inline-flex items-center text-primary hover:text-primary/90 mb-8 group">
+              <ArrowLeft className="w-4 h-4 mr-2 transition-transform group-hover:-translate-x-1" />
+              <span>Back to home</span>
+            </Link>
 
-        <div className="mt-4">
-          <Link href="/reset-password">Forgot your password?</Link>
-        </div>
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold text-foreground mb-2">
+                Welcome Back
+              </h2>
+              <p className="text-muted-foreground">
+                Sign in to continue to CurioPay
+              </p>
+            </div>
 
-        <div className="bg-gradient-to-r from-transparent via-neutral-300 dark:via-neutral-700 to-transparent my-8 h-[1px] w-full" />
+            <form className="space-y-6" onSubmit={handleSubmit}>
+              <LabelInputContainer>
+                <Label htmlFor="email" className="text-foreground">Email Address</Label>
+                <Input 
+                  id="email" 
+                  placeholder="you@example.com" 
+                  type="email" 
+                  required
+                  className="h-12 bg-background border-input"
+                />
+              </LabelInputContainer>
 
-        <div className="flex flex-col space-y-4">
-          <Link href="/register">
-            <button
-              className="relative group/btn flex space-x-2 items-center justify-start px-4 w-full text-black rounded-md h-10 font-medium shadow-input bg-gray-50 dark:bg-zinc-900 dark:shadow-[0px_0px_1px_1px_var(--neutral-800)]"
-              type="button"
-            >
-              <span className="text-neutral-700 dark:text-neutral-300 text-sm">
-                Dont have an account? Sign up
-              </span>
+              <LabelInputContainer>
+                <Label htmlFor="password" className="text-foreground">Password</Label>
+                <Input 
+                  id="password" 
+                  placeholder="••••••••" 
+                  type="password" 
+                  required
+                  className="h-12 bg-background border-input"
+                />
+              </LabelInputContainer>
 
-              <BottomGradient />
-            </button>
-          </Link>
+              {error && (
+                <motion.p 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-destructive text-sm"
+                >
+                  {error}
+                </motion.p>
+              )}
 
-          <button
-            className="relative group/btn flex space-x-2 items-center justify-start px-4 w-full text-black rounded-md h-10 font-medium shadow-input bg-gray-50 dark:bg-zinc-900 dark:shadow-[0px_0px_1px_1px_var(--neutral-800)]"
-            type="button"
-            onClick={handleGoogleSignIn}
-          >
-            <IconBrandGoogle className="h-4 w-4 text-neutral-800 dark:text-neutral-300" />
-            <span className="text-neutral-700 dark:text-neutral-300 text-sm">
-              Sign in with Google
-            </span>
-            <BottomGradient />
-          </button>
-        </div>
-      </form>
+              <div className="space-y-4">
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground"
+                >
+                  {loading ? "Signing in..." : "Sign In"}
+                </Button>
+
+                <div className="text-center">
+                  <Link 
+                    href="/register" 
+                    className="text-primary hover:text-primary/90 text-sm"
+                  >
+                    Don't have an account? Sign up
+                  </Link>
+                </div>
+              </div>
+
+              {/* Commented out Google Sign In
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-input"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-card text-muted-foreground">Or continue with</span>
+                </div>
+              </div>
+
+              <button
+                className="w-full h-12 flex items-center justify-center gap-2 border border-input rounded-lg text-foreground hover:bg-accent transition-colors"
+                type="button"
+                onClick={handleGoogleSignIn}
+              >
+                <IconBrandGoogle className="h-5 w-5" />
+                <span>Sign in with Google</span>
+              </button>
+              */}
+            </form>
+          </div>
+        </motion.div>
+      </div>
     </div>
   );
 }
-
-const BottomGradient = () => {
-  return (
-    <>
-      <span className="group-hover/btn:opacity-100 block transition duration-500 opacity-0 absolute h-px w-full -bottom-px inset-x-0 bg-gradient-to-r from-transparent via-cyan-500 to-transparent" />
-      <span className="group-hover/btn:opacity-100 blur-sm block transition duration-500 opacity-0 absolute h-px w-1/2 mx-auto -bottom-px inset-x-10 bg-gradient-to-r from-transparent via-indigo-500 to-transparent" />
-    </>
-  );
-};
 
 const LabelInputContainer = ({
   children,
@@ -140,7 +165,7 @@ const LabelInputContainer = ({
   className?: string;
 }) => {
   return (
-    <div className={cn("flex flex-col space-y-2 w-full", className)}>
+    <div className={cn("flex flex-col space-y-2", className)}>
       {children}
     </div>
   );
