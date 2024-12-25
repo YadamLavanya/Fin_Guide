@@ -165,6 +165,18 @@ export default function Home() {
           >
             Privacy-focused budget tracking with AI-powered insights. Forever free, completely open source.
           </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="bg-yellow-100 dark:bg-yellow-900/50 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-8 max-w-2xl mx-auto"
+          >
+            <p className="text-yellow-800 dark:text-yellow-200 text-sm sm:text-base">
+              ⚠️ <strong>Important:</strong> While we offer a demo for preview purposes, we strongly recommend local deployment for actual use. The demo should NOT be used for real financial data. Your financial privacy matters - deploy locally to keep your data under your control.
+            </p>
+          </motion.div>
+
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -479,27 +491,47 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="bg-background border-t py-8 sm:py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-center sm:justify-between items-center gap-4 sm:gap-0">
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex items-center gap-2"
-          >
-            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-            <p className="text-muted-foreground text-xs sm:text-sm">
-              © 2024 CurioPay. All rights reserved.
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col items-center gap-6">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex items-center gap-2"
+            >
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+              <p className="text-muted-foreground text-xs sm:text-sm">
+                © 2024 CurioPay. All rights reserved.
+              </p>
+            </motion.div>
+            
+            <div className="flex flex-wrap justify-center gap-4 text-sm text-muted-foreground">
+              <Link href="/privacy" className="hover:text-primary transition-colors">
+                Privacy Policy
+              </Link>
+              <Link href="/terms" className="hover:text-primary transition-colors">
+                Terms of Service
+              </Link>
+              <Link href="/disclaimer" className="hover:text-primary transition-colors">
+                Disclaimer
+              </Link>
+            </div>
+
+            <p className="text-xs text-center text-muted-foreground max-w-2xl">
+              CurioPay is provided "as is" without warranty. Not a substitute for professional financial advice. 
+              By using CurioPay, you agree to our Terms of Service and Privacy Policy. The demo environment should NOT be used for real financial data - please deploy locally for actual use.
             </p>
-          </motion.div>
-          <motion.a
-            href="https://github.com/adhamafis/curiopay"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-muted-foreground hover:text-primary transition-colors"
-            whileHover={{ scale: 1.1, rotate: 360 }}
-            transition={{ duration: 0.5 }}
-          >
-            <GitHubLogoIcon className="w-5 h-5 sm:w-6 sm:h-6" />
-          </motion.a>
+
+            <motion.a
+              href="https://github.com/adhamafis/curiopay"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-muted-foreground hover:text-primary transition-colors"
+              whileHover={{ scale: 1.1, rotate: 360 }}
+              transition={{ duration: 0.5 }}
+            >
+              <GitHubLogoIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+            </motion.a>
+          </div>
         </div>
       </footer>
     </div>

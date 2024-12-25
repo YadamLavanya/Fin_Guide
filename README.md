@@ -60,6 +60,10 @@ With **Curiopay**, users can:
 ## Screenshot
 ![Screenshot Description](https://i.imgur.com/ABefR8O.png)
 
+> **Privacy Notice**: While a demo is available to showcase the project's functionality, we strongly recommend local deployment for actual usage since financial data is sensitive information. Local deployment ensures your financial data remains completely under your control.
+
+> **Disclaimer**: CurioPay is provided "as is" without warranty of any kind, express or implied. The creators and contributors of CurioPay are not liable for any damages or losses arising from the use of this software. Users are solely responsible for how they use the application and should exercise due diligence in managing their financial data. This is not a substitute for professional financial advice.
+
 ---
 
 ## Features Overview
