@@ -31,4 +31,4 @@ export async function GET(request: NextRequest) {
 
 // Disable body parsing since we don't need it for this endpoint
 export const dynamic = 'force-dynamic';
-export const maxDuration = 300; // 5 minutes timeout 
+export const maxDuration = 60; // Maximum allowed duration on Vercel Hobby plan 
