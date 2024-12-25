@@ -5,6 +5,11 @@ import { Input } from "@/components/ui/input";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { validatePassword } from "@/lib/passwordValidation";
 import debounce from "lodash/debounce";
+import { motion } from "framer-motion";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export default function VerificationPage() {
   const [password, setPassword] = useState("");
@@ -106,60 +111,153 @@ export default function VerificationPage() {
 
   if (type === "email") {
     return (
-      <div className="max-w-md w-full mx-auto rounded-none md:rounded-2xl p-4 md:p-8 shadow-input bg-white dark:bg-black">
-        <h2 className="font-bold text-xl text-neutral-800 dark:text-neutral-200">
-          Email Verification
-        </h2>
-        {message && <p className="text-green-500 mt-2">{message}</p>}
-        {error && <p className="text-red-500 mt-2">{error}</p>}
+      <div className="min-h-screen bg-background text-foreground">
+        <div className="flex min-h-screen items-center justify-center p-4">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="w-full max-w-md"
+          >
+            <div className="rounded-2xl border bg-card p-8 shadow-lg">
+              <Link href="/" className="inline-flex items-center text-primary hover:text-primary/90 mb-8 group">
+                <ArrowLeft className="w-4 h-4 mr-2 transition-transform group-hover:-translate-x-1" />
+                <span>Back to home</span>
+              </Link>
+
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold text-foreground mb-2">
+                  Email Verification
+                </h2>
+                <p className="text-muted-foreground">
+                  Verifying your email address...
+                </p>
+              </div>
+
+              {message && (
+                <motion.p 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-green-500 text-sm"
+                >
+                  {message}
+                </motion.p>
+              )}
+              {error && (
+                <motion.p 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-destructive text-sm"
+                >
+                  {error}
+                </motion.p>
+              )}
+            </div>
+          </motion.div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-md w-full mx-auto rounded-none md:rounded-2xl p-4 md:p-8 shadow-input bg-white dark:bg-black">
-      <h2 className="font-bold text-xl text-neutral-800 dark:text-neutral-200">
-        Create New Password
-      </h2>
-      <form className="my-8" onSubmit={handleResetPassword}>
-        <LabelInputContainer className="mb-4">
-          <Label htmlFor="password">New Password</Label>
-          <Input
-            id="password"
-            type="password"
-            value={password}
-            onChange={handlePasswordChange}
-          />
-          {passwordStrength.length > 0 && (
-            <div className="mt-2 text-sm text-amber-600 dark:text-amber-400">
-              {passwordStrength.map((error, index) => (
-                <div key={index}>{error}</div>
-              ))}
-            </div>
-          )}
-        </LabelInputContainer>
-
-        <LabelInputContainer className="mb-4">
-          <Label htmlFor="confirmPassword">Confirm Password</Label>
-          <Input
-            id="confirmPassword"
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-          />
-        </LabelInputContainer>
-
-        <button
-          className="bg-gradient-to-br from-black dark:from-zinc-900 to-neutral-600 block w-full text-white rounded-md h-10 font-medium disabled:opacity-50"
-          type="submit"
-          disabled={loading}
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="flex min-h-screen items-center justify-center p-4">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-md"
         >
-          {loading ? "Resetting..." : "Reset Password"}
-        </button>
+          <div className="rounded-2xl border bg-card p-8 shadow-lg">
+            <Link href="/" className="inline-flex items-center text-primary hover:text-primary/90 mb-8 group">
+              <ArrowLeft className="w-4 h-4 mr-2 transition-transform group-hover:-translate-x-1" />
+              <span>Back to home</span>
+            </Link>
 
-        {message && <p className="text-green-500 mt-2">{message}</p>}
-        {error && <p className="text-red-500 mt-2">{error}</p>}
-      </form>
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold text-foreground mb-2">
+                Create New Password
+              </h2>
+              <p className="text-muted-foreground">
+                Enter your new password below
+              </p>
+            </div>
+
+            <form className="space-y-6" onSubmit={handleResetPassword}>
+              <LabelInputContainer>
+                <Label htmlFor="password" className="text-foreground">New Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={handlePasswordChange}
+                  placeholder="••••••••"
+                  className="h-12 bg-background border-input"
+                />
+                {passwordStrength.length > 0 && (
+                  <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-sm text-amber-600 dark:text-amber-400"
+                  >
+                    {passwordStrength.map((error, index) => (
+                      <div key={index}>{error}</div>
+                    ))}
+                  </motion.div>
+                )}
+              </LabelInputContainer>
+
+              <LabelInputContainer>
+                <Label htmlFor="confirmPassword" className="text-foreground">Confirm Password</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="h-12 bg-background border-input"
+                />
+              </LabelInputContainer>
+
+              {message && (
+                <motion.p 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-green-500 text-sm"
+                >
+                  {message}
+                </motion.p>
+              )}
+              {error && (
+                <motion.p 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-destructive text-sm"
+                >
+                  {error}
+                </motion.p>
+              )}
+
+              <div className="space-y-4">
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground"
+                >
+                  {loading ? "Resetting password..." : "Reset Password"}
+                </Button>
+
+                <div className="text-center">
+                  <Link 
+                    href="/login" 
+                    className="text-primary hover:text-primary/90 text-sm"
+                  >
+                    Back to login
+                  </Link>
+                </div>
+              </div>
+            </form>
+          </div>
+        </motion.div>
+      </div>
     </div>
   );
 }
@@ -172,7 +270,7 @@ const LabelInputContainer = ({
   className?: string;
 }) => {
   return (
-    <div className={`flex flex-col space-y-2 w-full ${className}`}>
+    <div className={cn("flex flex-col space-y-2", className)}>
       {children}
     </div>
   );

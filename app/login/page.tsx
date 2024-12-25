@@ -91,7 +91,15 @@ export default function LoginForm() {
               </LabelInputContainer>
 
               <LabelInputContainer>
-                <Label htmlFor="password" className="text-foreground">Password</Label>
+                <div className="flex justify-between items-center">
+                  <Label htmlFor="password" className="text-foreground">Password</Label>
+                  <Link 
+                    href="/reset-password" 
+                    className="text-sm text-primary hover:text-primary/90"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
                 <Input 
                   id="password" 
                   placeholder="••••••••" 
