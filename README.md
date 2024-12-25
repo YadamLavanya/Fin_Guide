@@ -1,5 +1,13 @@
 ## Curiopay: Open Source Budget Tracking App with LLM Insights
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Status: Active](https://img.shields.io/badge/Status-Active-success.svg)](https://github.com/adhamafis/curiopay)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.2.2-blue.svg)](https://www.typescriptlang.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-14.0.4-black.svg)](https://nextjs.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4.0-38B2AC.svg)](https://tailwindcss.com/)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
+[![Contributions Welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/adhamafis/curiopay/issues)
+
 **Curiopay** is a free, open-source budget tracking app that provides intelligent insights into your spending using Local Language Model (LLM) providers. It allows users to track expenses, set budgets, and interact with AI for personalized financial advice. With robust security and privacy features, Curiopay also lets you choose from a variety of LLM providers, manage your data securely, and easily deploy the app locally.
 
 **Project Status**: Actively developed  
