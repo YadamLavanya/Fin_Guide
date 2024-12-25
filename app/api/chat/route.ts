@@ -226,6 +226,21 @@ Initial greeting: "Hey! I'm Curio 👋 How can I help you manage your finances t
       prompt: 'Chat request failed'
     });
 
+    // Check if error is due to missing API key
+    if (error instanceof Error && 
+        (error.message.includes('API key') || 
+         error.message.toLowerCase().includes('authentication') ||
+         error.message.toLowerCase().includes('unauthorized'))) {
+      return NextResponse.json(
+        { 
+          error: 'API key not configured',
+          action: 'configure_llm',
+          message: 'Please configure your LLM provider and API key in Settings → AI Settings.'
+        },
+        { status: 401 }
+      );
+    }
+
     return NextResponse.json(
       { error: 'Failed to process chat request' },
       { status: 500 }

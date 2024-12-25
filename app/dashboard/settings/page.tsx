@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useTheme } from "@/components/theme/theme-provider";
 import { useToast } from "@/components/ui/use-toast";
-import type { UserSettings, CategorySettings } from '@/lib/types';
+import type { CategorySettings } from '@/lib/types';
 import {
   Card,
   CardHeader,
@@ -62,11 +62,25 @@ import {
 import { Label } from "@/components/ui/label";
 import Image from 'next/image';
 import { themes } from "@/lib/themes";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert"
+import { InfoIcon } from "lucide-react";
+
+interface UserSettings {
+  currency: string;
+  theme?: string;
+  notifications: {
+    email: boolean;
+  };
+}
 
 interface LLMProvider {
   id: string;
   name: string;
-  svgPath: string;  // Changed from icon to svgPath
+  svgPath: string;
   description: string;
   requiresApiKey: boolean;
   apiKeyPlaceholder?: string;
@@ -78,6 +92,7 @@ interface LLMProvider {
     contextLength?: boolean;
     temperature?: boolean;
     systemPrompt?: boolean;
+    maxTokens?: boolean;
   };
 }
 
@@ -86,6 +101,7 @@ export default function SettingsPage() {
   const { toast } = useToast();
   const [settings, setSettings] = useState<UserSettings>({
     currency: 'USD',
+    theme: theme,
     notifications: { email: true }
   });
   const [loading, setLoading] = useState(false);
@@ -135,48 +151,107 @@ export default function SettingsPage() {
     }
     return 'openai';
   });
+  const [providerConfigs, setProviderConfigs] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return JSON.parse(localStorage.getItem('provider-configs') || '{}');
+    }
+    return {};
+  });
 
   const llmProviders: LLMProvider[] = [
-    // {
-    //   id: 'openai',
-    //   name: 'OpenAI',
-    //   svgPath: '/openai.svg',
-    //   description: 'GPT-3.5, GPT-4, and more',
-    //   requiresApiKey: true,
-    //   apiKeyPlaceholder: 'sk-...',
-    //   apiKeyLink: 'https://platform.openai.com/api-keys',
-    // },
-    // {
-    //   id: 'anthropic',
-    //   name: 'Anthropic',
-    //   svgPath: '/anthropic.svg',
-    //   description: 'Claude and Claude Instant',
-    //   requiresApiKey: true,
-    //   apiKeyPlaceholder: 'sk-ant-...',
-    //   apiKeyLink: 'https://console.anthropic.com/account/keys',
-    // },
+    {
+      id: 'openai',
+      name: 'OpenAI',
+      svgPath: '/openai.svg',
+      description: 'GPT-3.5, GPT-4, and more',
+      requiresApiKey: true,
+      apiKeyPlaceholder: 'sk-...',
+      apiKeyLink: 'https://platform.openai.com/api-keys',
+      extraSettings: {
+        modelOptions: [
+          'gpt-4-turbo-preview',
+          'gpt-4-0125-preview',
+          'gpt-4-1106-preview',
+          'gpt-4',
+          'gpt-4-32k',
+          'gpt-3.5-turbo',
+          'gpt-3.5-turbo-16k'
+        ],
+        customModel: true,
+        temperature: true,
+        systemPrompt: true,
+        maxTokens: true,
+      },
+    },
+    {
+      id: 'anthropic',
+      name: 'Anthropic',
+      svgPath: '/anthropic.svg',
+      description: 'Claude and Claude Instant',
+      requiresApiKey: true,
+      apiKeyPlaceholder: 'sk-ant-...',
+      apiKeyLink: 'https://console.anthropic.com/account/keys',
+      extraSettings: {
+        modelOptions: [
+          'claude-3-opus-20240229',
+          'claude-3-sonnet-20240229',
+          'claude-2.1',
+          'claude-2.0',
+          'claude-instant-1.2'
+        ],
+        customModel: true,
+        temperature: true,
+        systemPrompt: true,
+        maxTokens: true,
+      },
+    },
     {
       id: 'ollama',
       name: 'Ollama',
-      svgPath: '/ollama.png', // Using PNG for Ollama
+      svgPath: '/ollama.png',
       description: 'Run models locally',
       requiresApiKey: false,
       extraSettings: {
         baseUrl: true,
         customModel: true,
+        modelOptions: [
+          'llama2',
+          'llama2:13b',
+          'llama2:70b',
+          'codellama',
+          'mistral',
+          'mixtral',
+          'neural-chat',
+          'starling-lm',
+          'phi',
+          'qwen',
+          'yi'
+        ],
         contextLength: true,
         temperature: true,
+        systemPrompt: true,
+        maxTokens: true,
       },
     },
-    // {
-    //   id: 'google',
-    //   name: 'Google AI',
-    //   svgPath: '/google.svg',
-    //   description: 'PaLM and Gemini',
-    //   requiresApiKey: true,
-    //   apiKeyPlaceholder: 'AIza...',
-    //   apiKeyLink: 'https://makersuite.google.com/app/apikeys',
-    // },
+    {
+      id: 'gemini',
+      name: 'Google AI',
+      svgPath: '/google.svg',
+      description: 'PaLM and Gemini',
+      requiresApiKey: true,
+      apiKeyPlaceholder: 'AIza...',
+      apiKeyLink: 'https://makersuite.google.com/app/apikeys',
+      extraSettings: {
+        modelOptions: [
+          'gemini-pro',
+          'gemini-pro-vision',
+        ],
+        customModel: true,
+        temperature: true,
+        systemPrompt: true,
+        maxTokens: true,
+      },
+    },
     {
       id: 'cohere',
       name: 'Cohere',
@@ -185,25 +260,62 @@ export default function SettingsPage() {
       requiresApiKey: true,
       apiKeyPlaceholder: 'co-...',
       apiKeyLink: 'https://dashboard.cohere.com/api-keys',
+      extraSettings: {
+        modelOptions: [
+          'command',
+          'command-light',
+          'command-nightly',
+          'command-r',
+          'command-light-r'
+        ],
+        customModel: true,
+        temperature: true,
+        maxTokens: true,
+      },
     },
-    // {
-    //   id: 'mistral',
-    //   name: 'Mistral AI',
-    //   svgPath: '/mistral.svg',
-    //   description: 'Mistral-7B and more',
-    //   requiresApiKey: true,
-    //   apiKeyPlaceholder: 'mis-...',
-    //   apiKeyLink: 'https://console.mistral.ai/api-keys/',
-    // },
-    // {
-    //   id: 'azure',
-    //   name: 'Azure OpenAI',
-    //   svgPath: '/azure.svg',
-    //   description: 'Azure-hosted models',
-    //   requiresApiKey: true,
-    //   apiKeyPlaceholder: 'azure-key',
-    //   apiKeyLink: 'https://portal.azure.com/',
-    // },
+    {
+      id: 'mistral',
+      name: 'Mistral AI',
+      svgPath: '/mistral.svg',
+      description: 'Mistral-7B and more',
+      requiresApiKey: true,
+      apiKeyPlaceholder: 'mis-...',
+      apiKeyLink: 'https://console.mistral.ai/api-keys/',
+      extraSettings: {
+        modelOptions: [
+          'mistral-large-latest',
+          'mistral-medium-latest',
+          'mistral-small-latest',
+          'mistral-tiny-latest'
+        ],
+        customModel: true,
+        temperature: true,
+        systemPrompt: true,
+        maxTokens: true,
+      },
+    },
+    {
+      id: 'azure',
+      name: 'Azure OpenAI',
+      svgPath: '/azure.svg',
+      description: 'Azure-hosted models',
+      requiresApiKey: true,
+      apiKeyPlaceholder: 'azure-key',
+      apiKeyLink: 'https://portal.azure.com/',
+      extraSettings: {
+        baseUrl: true,
+        modelOptions: [
+          'gpt-4',
+          'gpt-4-32k',
+          'gpt-35-turbo',
+          'gpt-35-turbo-16k'
+        ],
+        customModel: true,
+        temperature: true,
+        systemPrompt: true,
+        maxTokens: true,
+      },
+    },
     {
       id: 'groq',
       name: 'Groq',
@@ -213,10 +325,90 @@ export default function SettingsPage() {
       apiKeyPlaceholder: 'gsk_...',
       apiKeyLink: 'https://console.groq.com/keys',
       extraSettings: {
-        modelOptions: ['mixtral-8x7b-32768', 'llama2-70b-4096'],
+        modelOptions: [
+          'mixtral-8x7b-32768',
+          'llama2-70b-4096',
+          'gemma-7b-it'
+        ],
+        customModel: true,
+        temperature: true,
+        systemPrompt: true,
+        maxTokens: true,
       },
     },
   ];
+
+  const defaultProviderConfigs: { [key: string]: any } = {
+    openai: {
+      model: 'gpt-4-turbo-preview',
+      temperature: 0.7,
+      maxTokens: 4000,
+      systemPrompt: '',
+    },
+    anthropic: {
+      model: 'claude-3-opus-20240229',
+      temperature: 0.7,
+      maxTokens: 4000,
+      systemPrompt: '',
+    },
+    ollama: {
+      baseUrl: 'http://localhost:11434',
+      model: 'llama2',
+      customModel: '',
+      contextLength: 4096,
+      temperature: 0.7,
+      maxTokens: 4000,
+      systemPrompt: '',
+    },
+    gemini: {
+      model: 'gemini-pro',
+      temperature: 0.7,
+      maxTokens: 4000,
+      systemPrompt: '',
+    },
+    cohere: {
+      model: 'command',
+      temperature: 0.7,
+      maxTokens: 4000,
+    },
+    mistral: {
+      model: 'mistral-large-latest',
+      temperature: 0.7,
+      maxTokens: 4000,
+      systemPrompt: '',
+    },
+    azure: {
+      model: 'gpt-4',
+      baseUrl: '',
+      temperature: 0.7,
+      maxTokens: 4000,
+      systemPrompt: '',
+    },
+    groq: {
+      model: 'mixtral-8x7b-32768',
+      temperature: 0.7,
+      maxTokens: 4000,
+      systemPrompt: '',
+    },
+  };
+
+  const handleResetProviderConfig = (providerId: string) => {
+    const defaultConfig = defaultProviderConfigs[providerId];
+    if (defaultConfig) {
+      setProviderConfigs(prev => ({
+        ...prev,
+        [providerId]: defaultConfig
+      }));
+      localStorage.setItem('provider-configs', JSON.stringify({
+        ...providerConfigs,
+        [providerId]: defaultConfig
+      }));
+      toast({
+        title: "Reset Complete",
+        description: "Provider settings have been reset to defaults.",
+      });
+    }
+  };
 
   useEffect(() => {
     fetchSettings();
@@ -267,10 +459,10 @@ export default function SettingsPage() {
       
       // Update localStorage and state
       Object.entries(updates).forEach(([key, value]) => {
-        if (key === 'notifications') {
+        if (key === 'notifications' && typeof value === 'object') {
           localStorage.setItem('email-notifications', value.email.toString());
         } else {
-          localStorage.setItem(key, value as string);
+          localStorage.setItem(key, String(value));
         }
       });
       
@@ -502,6 +694,21 @@ export default function SettingsPage() {
       title: "Success",
       description: "Default LLM updated successfully.",
     });
+  };
+
+  const handleProviderConfigChange = (providerId: string, updates: any) => {
+    const newConfig = {
+      ...providerConfigs[providerId],
+      ...updates
+    };
+    setProviderConfigs(prev => ({
+      ...prev,
+      [providerId]: newConfig
+    }));
+    localStorage.setItem('provider-configs', JSON.stringify({
+      ...providerConfigs,
+      [providerId]: newConfig
+    }));
   };
 
   return (
@@ -893,8 +1100,19 @@ export default function SettingsPage() {
       <Dialog open={showLLMDialog} onOpenChange={setShowLLMDialog}>
         <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Choose Language Model</DialogTitle>
+            <DialogTitle className="text-xl font-bold">Choose Language Model</DialogTitle>
           </DialogHeader>
+          
+          <Alert className="my-4">
+            <InfoIcon className="h-4 w-4" />
+            <AlertTitle>New Providers Available!</AlertTitle>
+            <AlertDescription>
+              We've added support for several new LLM providers: Mistral AI, Azure OpenAI, Gemini, OpenAI and Anthropic.
+              These integrations are currently in beta testing and may have limited functionality.
+              For the most stable experience, we recommend using Groq, Cohere, or Ollama.
+            </AlertDescription>
+          </Alert>
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
             {llmProviders.map((provider) => (
               <div
@@ -906,13 +1124,13 @@ export default function SettingsPage() {
                 }}
               >
                 <div className={`
-                  p-4 rounded-lg border-2 
-                  ${selectedLLM === provider.id ? 'border-primary' : 'border-border'}
-                  hover:border-primary transition-colors
-                  aspect-square flex flex-col items-center justify-center gap-2
-                  bg-card
+                  p-6 rounded-lg border-2 
+                  ${selectedLLM === provider.id ? 'border-primary bg-primary/5' : 'border-border'}
+                  hover:border-primary hover:bg-primary/5 transition-all
+                  aspect-square flex flex-col items-center justify-center gap-4
+                  bg-card relative
                 `}>
-                  <div className="w-12 h-12 relative">
+                  <div className="w-16 h-16 relative mb-2">
                     <Image
                       src={provider.svgPath}
                       alt={provider.name}
@@ -920,13 +1138,20 @@ export default function SettingsPage() {
                       className="object-contain"
                     />
                   </div>
-                  <h3 className="font-semibold">{provider.name}</h3>
-                  <p className="text-sm text-muted-foreground text-center">
-                    {provider.description}
-                  </p>
+                  <div className="text-center">
+                    <h3 className="font-semibold text-lg mb-1">{provider.name}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {provider.description}
+                    </p>
+                  </div>
                   {selectedLLM === provider.id && (
-                    <div className="absolute top-2 right-2">
+                    <div className="absolute top-3 right-3">
                       <Check className="w-5 h-5 text-primary" />
+                    </div>
+                  )}
+                  {provider.id !== 'ollama' && provider.requiresApiKey && (
+                    <div className="absolute bottom-3 right-3">
+                      <Link className="w-4 h-4 text-muted-foreground" />
                     </div>
                   )}
                 </div>
@@ -937,22 +1162,37 @@ export default function SettingsPage() {
       </Dialog>
 
       <Dialog open={showProviderConfig} onOpenChange={setShowProviderConfig}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
-            <DialogTitle>Configure {llmProviders.find(p => p.id === selectedLLM)?.name}</DialogTitle>
+            <DialogTitle className="text-xl font-bold flex items-center gap-3">
+              <div className="w-8 h-8 relative">
+                <Image
+                  src={llmProviders.find(p => p.id === selectedLLM)?.svgPath || ''}
+                  alt={llmProviders.find(p => p.id === selectedLLM)?.name || ''}
+                  fill
+                  className="object-contain"
+                />
+              </div>
+              Configure {llmProviders.find(p => p.id === selectedLLM)?.name}
+            </DialogTitle>
           </DialogHeader>
+
           {selectedLLM === 'ollama' ? (
-            <div className="space-y-4">
+            <div className="space-y-6 py-4">
               <div className="space-y-2">
-                <Label>Base URL</Label>
+                <Label className="text-base">Base URL</Label>
                 <Input
                   value={ollamaConfig.baseUrl}
                   onChange={(e) => handleOllamaConfigChange({ baseUrl: e.target.value })}
                   placeholder="http://localhost:11434"
+                  className="font-mono"
                 />
+                <p className="text-sm text-muted-foreground">
+                  The URL where your Ollama instance is running
+                </p>
               </div>
               <div className="space-y-2">
-                <Label>Model</Label>
+                <Label className="text-base">Model</Label>
                 <Select
                   value={ollamaConfig.model}
                   onValueChange={(value) => handleOllamaConfigChange({ model: value })}
@@ -968,26 +1208,33 @@ export default function SettingsPage() {
                   </SelectContent>
                 </Select>
                 {ollamaConfig.model === 'custom' && (
-                  <Input
-                    className="mt-2"
-                    placeholder="Enter custom model name"
-                    value={ollamaConfig.customModel}
-                    onChange={(e) => handleOllamaConfigChange({ customModel: e.target.value })}
-                  />
+                  <div className="mt-2 space-y-2">
+                    <Label>Custom Model Name</Label>
+                    <Input
+                      placeholder="Enter custom model name"
+                      value={ollamaConfig.customModel}
+                      onChange={(e) => handleOllamaConfigChange({ customModel: e.target.value })}
+                      className="font-mono"
+                    />
+                  </div>
                 )}
               </div>
               <div className="space-y-2">
-                <Label>Context Length</Label>
+                <Label className="text-base">Context Length</Label>
                 <Input
                   type="number"
                   value={ollamaConfig.contextLength}
                   onChange={(e) => handleOllamaConfigChange({ contextLength: parseInt(e.target.value) })}
                   min={1}
                   max={32768}
+                  className="font-mono"
                 />
+                <p className="text-sm text-muted-foreground">
+                  Maximum number of tokens to consider for context (1-32768)
+                </p>
               </div>
               <div className="space-y-2">
-                <Label>Temperature</Label>
+                <Label className="text-base">Temperature</Label>
                 <Input
                   type="number"
                   value={ollamaConfig.temperature}
@@ -995,81 +1242,96 @@ export default function SettingsPage() {
                   min={0}
                   max={2}
                   step={0.1}
+                  className="font-mono"
                 />
+                <p className="text-sm text-muted-foreground">
+                  Controls randomness in responses (0.0-2.0)
+                </p>
               </div>
             </div>
-          ) : selectedLLM === 'groq' ? (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label>Model</Label>
+          ) : (
+            <div className="space-y-6 py-4">
+              {llmProviders.find(p => p.id === selectedLLM)?.extraSettings?.modelOptions && (
                 <div className="space-y-2">
+                  <Label className="text-base">Model</Label>
                   <Select
-                    value={apiKeys[`${selectedLLM}-model`] || 'mixtral-8x7b-32768'}
-                    onValueChange={(value) => handleApiKeyChange(`${selectedLLM}-model`, value)}
+                    value={providerConfigs[selectedLLM]?.model || llmProviders.find(p => p.id === selectedLLM)?.extraSettings?.modelOptions?.[0]}
+                    onValueChange={(value) => handleProviderConfigChange(selectedLLM, { model: value })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select model" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="custom">Custom Model</SelectItem>
                       {llmProviders.find(p => p.id === selectedLLM)?.extraSettings?.modelOptions?.map(model => (
                         <SelectItem key={model} value={model}>
                           {model}
                         </SelectItem>
                       ))}
+                      {llmProviders.find(p => p.id === selectedLLM)?.extraSettings?.customModel && (
+                        <SelectItem value="custom">Custom Model</SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
-                  {apiKeys[`${selectedLLM}-model`] === 'custom' && (
-                    <Input
-                      placeholder="Enter custom model name"
-                      value={apiKeys[`${selectedLLM}-custom-model`] || ''}
-                      onChange={(e) => handleApiKeyChange(`${selectedLLM}-custom-model`, e.target.value)}
-                    />
+                  {providerConfigs[selectedLLM]?.model === 'custom' && (
+                    <div className="mt-2 space-y-2">
+                      <Label>Custom Model Name</Label>
+                      <Input
+                        placeholder="Enter custom model name"
+                        value={providerConfigs[selectedLLM]?.customModelName || ''}
+                        onChange={(e) => handleProviderConfigChange(selectedLLM, { customModelName: e.target.value })}
+                        className="font-mono"
+                      />
+                      <p className="text-sm text-muted-foreground">
+                        Enter the exact model name/ID as specified by the provider
+                      </p>
+                    </div>
                   )}
                 </div>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>API Key</Label>
-                  <a
-                    href={llmProviders.find(p => p.id === selectedLLM)?.apiKeyLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-primary hover:underline flex items-center gap-1"
-                  >
-                    Get API Key <Link className="h-3 w-3" />
-                  </a>
+              )}
+
+              {llmProviders.find(p => p.id === selectedLLM)?.extraSettings?.maxTokens && (
+                <div className="space-y-2">
+                  <Label className="text-base">Max Tokens</Label>
+                  <div className="flex gap-4 items-center">
+                    <Input
+                      type="range"
+                      min={1}
+                      max={32000}
+                      step={1}
+                      value={providerConfigs[selectedLLM]?.maxTokens || 4000}
+                      onChange={(e) => handleProviderConfigChange(selectedLLM, { maxTokens: parseInt(e.target.value) })}
+                      className="flex-1"
+                    />
+                    <Input
+                      type="number"
+                      min={1}
+                      max={32000}
+                      value={providerConfigs[selectedLLM]?.maxTokens || 4000}
+                      onChange={(e) => handleProviderConfigChange(selectedLLM, { maxTokens: parseInt(e.target.value) })}
+                      className="w-24 font-mono"
+                    />
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Maximum number of tokens to generate in the response
+                  </p>
                 </div>
-                <div className="relative">
+              )}
+
+              {llmProviders.find(p => p.id === selectedLLM)?.extraSettings?.baseUrl && (
+                <div className="space-y-2">
+                  <Label className="text-base">Base URL</Label>
                   <Input
-                    type={showApiKey[selectedLLM] ? 'text' : 'password'}
-                    value={apiKeys[selectedLLM] || ''}
-                    onChange={(e) => handleApiKeyChange(selectedLLM, e.target.value)}
-                    placeholder={llmProviders.find(p => p.id === selectedLLM)?.apiKeyPlaceholder}
+                    value={providerConfigs[selectedLLM]?.baseUrl || ''}
+                    onChange={(e) => handleProviderConfigChange(selectedLLM, { baseUrl: e.target.value })}
+                    placeholder="https://your-azure-endpoint.openai.azure.com"
+                    className="font-mono"
                   />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="absolute right-2 top-1/2 -translate-y-1/2"
-                    onClick={() => setShowApiKey(prev => ({
-                      ...prev,
-                      [selectedLLM]: !prev[selectedLLM]
-                    }))}
-                  >
-                    {showApiKey[selectedLLM] ? (
-                      <EyeOffIcon className="h-4 w-4" />
-                    ) : (
-                      <EyeIcon className="h-4 w-4" />
-                    )}
-                  </Button>
                 </div>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
+              )}
+
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label>API Key</Label>
+                  <Label className="text-base">API Key</Label>
                   {llmProviders.find(p => p.id === selectedLLM)?.apiKeyLink && (
                     <a
                       href={llmProviders.find(p => p.id === selectedLLM)?.apiKeyLink}
@@ -1087,17 +1349,18 @@ export default function SettingsPage() {
                     value={apiKeys[selectedLLM] || ''}
                     onChange={(e) => handleApiKeyChange(selectedLLM, e.target.value)}
                     placeholder={llmProviders.find(p => p.id === selectedLLM)?.apiKeyPlaceholder}
+                    className="font-mono pr-10"
                   />
                   <Button
                     type="button"
                     variant="ghost"
+                    size="sm"
                     className="absolute right-2 top-1/2 -translate-y-1/2"
                     onClick={() => setShowApiKey(prev => ({
                       ...prev,
                       [selectedLLM]: !prev[selectedLLM]
                     }))}
-                  ></Button>
-                    <Button>
+                  >
                     {showApiKey[selectedLLM] ? (
                       <EyeOffIcon className="h-4 w-4" />
                     ) : (
@@ -1106,8 +1369,87 @@ export default function SettingsPage() {
                   </Button>
                 </div>
               </div>
+
+              {llmProviders.find(p => p.id === selectedLLM)?.extraSettings?.temperature && (
+                <div className="space-y-2">
+                  <Label className="text-base">Temperature</Label>
+                  <div className="flex gap-4 items-center">
+                    <Input
+                      type="range"
+                      min={0}
+                      max={2}
+                      step={0.1}
+                      value={providerConfigs[selectedLLM]?.temperature || 0.7}
+                      onChange={(e) => handleProviderConfigChange(selectedLLM, { temperature: parseFloat(e.target.value) })}
+                      className="flex-1"
+                    />
+                    <Input
+                      type="number"
+                      min={0}
+                      max={2}
+                      step={0.1}
+                      value={providerConfigs[selectedLLM]?.temperature || 0.7}
+                      onChange={(e) => handleProviderConfigChange(selectedLLM, { temperature: parseFloat(e.target.value) })}
+                      className="w-20 font-mono"
+                    />
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Controls randomness in responses (0.0-2.0)
+                  </p>
+                </div>
+              )}
+
+              {llmProviders.find(p => p.id === selectedLLM)?.extraSettings?.systemPrompt && (
+                <div className="space-y-2">
+                  <Label className="text-base">System Prompt</Label>
+                  <textarea
+                    value={providerConfigs[selectedLLM]?.systemPrompt || ''}
+                    onChange={(e) => handleProviderConfigChange(selectedLLM, { systemPrompt: e.target.value })}
+                    placeholder="Enter a system prompt to guide the model's behavior..."
+                    className="w-full h-32 px-3 py-2 text-sm rounded-md border border-input bg-background font-mono"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Custom instructions to control the model's behavior and personality
+                  </p>
+                </div>
+              )}
+
+              {selectedLLM === 'azure' && (
+                <Alert>
+                  <InfoIcon className="h-4 w-4" />
+                  <AlertTitle>Azure Configuration</AlertTitle>
+                  <AlertDescription>
+                    Make sure to provide both the API key and the Azure endpoint URL. The model field should match your Azure deployment name.
+                  </AlertDescription>
+                </Alert>
+              )}
             </div>
           )}
+
+          <div className="flex justify-end gap-3 mt-6">
+            <Button
+              variant="outline"
+              onClick={() => setShowProviderConfig(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => handleResetProviderConfig(selectedLLM)}
+              className="mr-auto"
+            >
+              Reset to Default
+            </Button>
+            <Button
+              onClick={() => {
+                handleDefaultLLMChange(selectedLLM);
+                setShowProviderConfig(false);
+                setShowLLMDialog(false);
+              }}
+            >
+              Save & Set as Default
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

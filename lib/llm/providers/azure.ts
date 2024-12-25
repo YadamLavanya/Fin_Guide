@@ -1,19 +1,33 @@
-import Anthropic from '@anthropic-ai/sdk';
+import { AzureOpenAI } from "openai";
 import { LLMProvider, TransactionData, InsightData } from '../types';
 import { generateLLMPrompt } from '../utils';
 import { llmLogger } from '../logging';
 import type { ProviderConfig } from '../factory';
 
-export class AnthropicProvider implements LLMProvider {
-  private client: Anthropic;
+export class AzureProvider implements LLMProvider {
+  private client: AzureOpenAI;
   private model: string;
+  private deploymentId: string;
 
   constructor(config: ProviderConfig) {
     if (!config.apiKey) {
-      throw new Error('Anthropic API key is required');
+      throw new Error('Azure API key is required');
     }
-    this.client = new Anthropic({ apiKey: config.apiKey });
-    this.model = config.model || 'claude-2';
+    if (!config.baseUrl) {
+      throw new Error('Azure endpoint URL is required');
+    }
+    if (!config.model) {
+      throw new Error('Azure deployment ID is required');
+    }
+
+    this.client = new AzureOpenAI({
+      apiKey: config.apiKey,
+      endpoint: config.baseUrl,
+      deployment: config.model,
+      apiVersion: "2024-02-15-preview"
+    });
+    this.model = config.model;
+    this.deploymentId = config.model;
   }
 
   async analyze(data: TransactionData): Promise<InsightData> {
@@ -21,14 +35,14 @@ export class AnthropicProvider implements LLMProvider {
     const prompt = generateLLMPrompt(data);
 
     try {
-      const response = await this.client.messages.create({
+      const response = await this.client.chat.completions.create({
         model: this.model,
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.7,
         max_tokens: 1000
       });
 
-      const generatedText = response.content[0].type === 'text' ? response.content[0].text : '';
+      const generatedText = response.choices[0].message?.content?.trim() || '';
       
       // Extract and clean JSON
       let jsonStr = generatedText;
@@ -66,7 +80,7 @@ export class AnthropicProvider implements LLMProvider {
         } catch (finalError) {
           llmLogger.log({
             timestamp: new Date().toISOString(),
-            provider: 'anthropic',
+            provider: 'azure',
             prompt,
             error: finalError,
             response: jsonStr,
@@ -89,7 +103,7 @@ export class AnthropicProvider implements LLMProvider {
 
       llmLogger.log({
         timestamp: new Date().toISOString(),
-        provider: 'anthropic',
+        provider: 'azure',
         prompt,
         response: parsedResponse,
         duration: Date.now() - startTime,
@@ -101,7 +115,7 @@ export class AnthropicProvider implements LLMProvider {
     } catch (error) {
       llmLogger.log({
         timestamp: new Date().toISOString(),
-        provider: 'anthropic',
+        provider: 'azure',
         prompt,
         error,
         duration: Date.now() - startTime,
@@ -112,4 +126,3 @@ export class AnthropicProvider implements LLMProvider {
     }
   }
 }
-//TODO: Implement the AnthropicProvider class

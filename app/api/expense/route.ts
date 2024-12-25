@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { PaymentMethodEnum, PrismaClientKnownRequestError } from '@prisma/client';
+import { PaymentMethodEnum, Prisma } from '@prisma/client';
 import { sendBudgetAlert } from '@/utils/email';
 import { calculateNextProcessDate } from '@/utils/dates';
 import { prisma } from '@/lib/prisma';
@@ -274,7 +274,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result, { status: 201 });
 
   } catch (error) {
-    if (error instanceof PrismaClientKnownRequestError) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
       const errorMessage = getPrismaErrorMessage(error.code);
       return NextResponse.json({ error: errorMessage }, { status: 400 });
     }
