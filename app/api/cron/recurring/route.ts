@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { processAllRecurringTransactions } from '@/utils/recurring';
+import * as Sentry from '@sentry/node';
+
+// Initialize Sentry
+Sentry.init({
+  dsn: process.env.SENTRY_DSN, // Make sure to set your Sentry DSN in the environment variables
+  tracesSampleRate: 1.0, // Adjust this value as needed
+});
 
 // This header is used to verify that the request is coming from a cron job
 const CRON_SECRET = process.env.CRON_SECRET;
@@ -22,6 +29,7 @@ export async function GET(request: NextRequest) {
     );
   } catch (error) {
     console.error('Failed to process recurring transactions:', error);
+    Sentry.captureException(error); // Capture the error with Sentry
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

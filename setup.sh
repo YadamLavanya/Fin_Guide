@@ -45,6 +45,9 @@ EOF
     echo "Storage Configuration"
     BLOB_TOKEN=$(prompt_value "Blob storage token" "")
 
+    echo "Sentry Configuration"
+    SENTRY_DSN=$(prompt_value "Sentry DSN" "")
+
     # Append optional configurations
     cat >> .env << EOF
 SMTP_HOST=$SMTP_HOST
@@ -53,6 +56,7 @@ SMTP_USER=$SMTP_USER
 SMTP_PASS=$SMTP_PASS
 SMTP_FROM=$SMTP_FROM
 BLOB_READ_WRITE_TOKEN=$BLOB_TOKEN
+SENTRY_DSN=$SENTRY_DSN
 EOF
 
     echo "✅ Created .env file with your configurations"

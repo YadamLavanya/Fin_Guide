@@ -56,7 +56,7 @@ const faqs = [
   },
   {
     question: "Can I deploy it locally?",
-    answer: "Yes! CurioPay is designed for easy local deployment. We provide a setup script that automates the installation process, requiring just Node.js, npm, Docker, and Python 3.x."
+    answer: "Yes! CurioPay is designed for easy local deployment. We provide a setup script that automates the installation process, requiring just Node.js, npm, Docker."
   },
   {
     question: "How can I contribute?",
