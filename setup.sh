@@ -29,6 +29,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 # Authentication
 NEXTAUTH_SECRET=$(generate_secret)
+CRON_SECRET=$(generate_secret)
 
 # Optional Services (Configure as needed)
 EOF

@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { PaymentMethodEnum } from '@prisma/client';
+import { calculateNextProcessDate } from '@/utils/dates';
 import { prisma } from '@/lib/prisma';
 
 const defaultCategories = [
@@ -55,14 +56,14 @@ const validateDescription = (desc: string): boolean => {
   return /^[a-zA-Z0-9\s\-_.,!?()]{1,255}$/.test(desc);
 };
 
-export async function GET(req: Request) {
+export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession();
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { searchParams } = new URL(req.url);
+    const searchParams = request.nextUrl.searchParams;
     const category = searchParams.get('category');
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
@@ -104,35 +105,32 @@ export async function GET(req: Request) {
       orderBy: { date: 'desc' },
     });
 
-    return new NextResponse(JSON.stringify(incomes), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return NextResponse.json(incomes);
   } catch (error) {
     console.error('GET income error:', error);
-    return new NextResponse(JSON.stringify({ error: 'Internal server error' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
-export async function POST(req: Request) {
+export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession();
     if (!session?.user?.email) {
-      return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
     }
 
-    const data = await req.json().catch(() => null);
+    const data = await request.json().catch(() => null);
     if (!data) {
-      return new NextResponse(JSON.stringify({ error: 'Invalid request body' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return NextResponse.json(
+        { error: 'Invalid request body' },
+        { status: 400 }
+      );
     }
 
     // Validate and sanitize inputs
@@ -150,12 +148,9 @@ export async function POST(req: Request) {
     // Validate payment method
     const paymentMethodName = data.paymentMethod.replace('_', '_') as PaymentMethodEnum;
     if (!Object.values(PaymentMethodEnum).includes(paymentMethodName)) {
-      return new NextResponse(JSON.stringify({ 
+      return NextResponse.json({ 
         error: `Invalid payment method. Must be one of: ${Object.values(PaymentMethodEnum).join(', ')}` 
-      }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      }, { status: 400 });
     }
 
     const [user, paymentMethod] = await Promise.all([
@@ -209,12 +204,22 @@ export async function POST(req: Request) {
               create: {
                 type: data.recurring.pattern.type,
                 frequency: data.recurring.pattern.frequency,
+                dayOfWeek: data.recurring.pattern.type === 'WEEKLY' ? new Date(data.date).getDay() : null,
+                dayOfMonth: ['MONTHLY', 'YEARLY'].includes(data.recurring.pattern.type) ? new Date(data.date).getDate() : null,
+                monthOfYear: data.recurring.pattern.type === 'YEARLY' ? new Date(data.date).getMonth() + 1 : null,
               }
             },
-            startDate: new Date(data.recurring.startDate),
+            startDate: new Date(data.date),
             endDate: data.recurring.endDate ? new Date(data.recurring.endDate) : null,
             lastProcessed: new Date(),
-            nextProcessDate: new Date(data.date),
+            nextProcessDate: calculateNextProcessDate(
+              new Date(data.date),
+              data.recurring.pattern.type,
+              data.recurring.pattern.frequency,
+              ['MONTHLY', 'YEARLY'].includes(data.recurring.pattern.type) ? new Date(data.date).getDate() : null,
+              data.recurring.pattern.type === 'WEEKLY' ? new Date(data.date).getDay() : null,
+              data.recurring.pattern.type === 'YEARLY' ? new Date(data.date).getMonth() + 1 : null,
+            ),
           },
         },
       }),
@@ -233,29 +238,26 @@ export async function POST(req: Request) {
       },
     });
 
-    return new NextResponse(JSON.stringify(income), {
-      status: 201,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return NextResponse.json(income, { status: 201 });
 
   } catch (error) {
     console.error('POST income error:', error);
-    return new NextResponse(JSON.stringify({ error: 'Internal server error' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
-export async function PUT(req: Request) {
+export async function PUT(request: NextRequest) {
   const session = await getServerSession();
   if (!session?.user?.email) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const data = await req.json();
-
   try {
+    const data = await request.json();
+
     const income = await prisma.income.update({
       where: { id: data.id },
       data: {
@@ -265,12 +267,34 @@ export async function PUT(req: Request) {
         paymentMethodId: data.paymentMethodId,
         date: new Date(data.date),
         notes: data.notes,
-        originalAmount: data.originalAmount,
+      },
+      include: {
+        category: {
+          select: { name: true, icon: true },
+        },
+        paymentMethod: {
+          select: { name: true },
+        },
+        recurring: {
+          select: {
+            id: true,
+            pattern: {
+              select: {
+                type: true,
+                frequency: true
+              }
+            },
+            startDate: true,
+            endDate: true,
+            nextProcessDate: true
+          }
+        },
       },
     });
 
     return NextResponse.json(income);
   } catch (error) {
+    console.error('Income update error:', error);
     return NextResponse.json(
       { error: 'Failed to update income' },
       { status: 500 }
@@ -278,13 +302,13 @@ export async function PUT(req: Request) {
   }
 }
 
-export async function DELETE(req: Request) {
+export async function DELETE(request: NextRequest) {
   const session = await getServerSession();
   if (!session?.user?.email) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { searchParams } = new URL(req.url);
+  const searchParams = request.nextUrl.searchParams;
   const id = searchParams.get('id');
 
   if (!id) {
@@ -299,6 +323,7 @@ export async function DELETE(req: Request) {
 
     return NextResponse.json(income);
   } catch (error) {
+    console.error('Income deletion error:', error);
     return NextResponse.json(
       { error: 'Failed to delete income' },
       { status: 500 }

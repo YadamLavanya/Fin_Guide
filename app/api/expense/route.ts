@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { PaymentMethodEnum, PrismaClientKnownRequestError } from '@prisma/client';
 import { sendBudgetAlert } from '@/utils/email';
-
+import { calculateNextProcessDate } from '@/utils/dates';
 import { prisma } from '@/lib/prisma';
 
 const defaultCategories = [
@@ -45,13 +45,13 @@ async function ensureUserCategories(userId: string) {
   }
 }
 
-export async function GET(req: Request) {
+export async function GET(request: NextRequest) {
   const session = await getServerSession();
   if (!session?.user?.email) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { searchParams } = new URL(req.url);
+  const searchParams = request.nextUrl.searchParams;
   const category = searchParams.get('category');
   const startDate = searchParams.get('startDate');
   const endDate = searchParams.get('endDate');
@@ -95,11 +95,12 @@ export async function GET(req: Request) {
     });
     
     return NextResponse.json(expenses);
-
-    
   } catch (error) {
     console.error('Error fetching expenses:', error);
-    return NextResponse.json({ error: 'Failed to fetch expenses' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to fetch expenses' },
+      { status: 500 }
+    );
   }
 }
 
@@ -127,15 +128,15 @@ const getPrismaErrorMessage = (errorCode: string): string => {
   return errorMessages[errorCode] || errorMessages.DEFAULT;
 };
 
-export async function POST(req: Request) {
+export async function POST(request: NextRequest) {
   const session = await getServerSession();
   if (!session?.user?.email) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const data = await req.json();
-
   try {
+    const data = await request.json();
+
     // Pre-validate data before starting transaction
     const description = sanitizeString(data.description);
     const amount = parseFloat(data.amount);
@@ -192,13 +193,23 @@ export async function POST(req: Request) {
               pattern: {
                 create: {
                   type: data.recurring.pattern.type,
-                  frequency: data.recurring.pattern.frequency
+                  frequency: data.recurring.pattern.frequency,
+                  dayOfWeek: data.recurring.pattern.type === 'WEEKLY' ? new Date(data.date).getDay() : null,
+                  dayOfMonth: ['MONTHLY', 'YEARLY'].includes(data.recurring.pattern.type) ? new Date(data.date).getDate() : null,
+                  monthOfYear: data.recurring.pattern.type === 'YEARLY' ? new Date(data.date).getMonth() + 1 : null,
                 }
               },
-              startDate: new Date(data.recurring.startDate),
+              startDate: new Date(data.date),
               endDate: data.recurring.endDate ? new Date(data.recurring.endDate) : null,
-              lastProcessed: new Date(data.recurring.startDate),
-              nextProcessDate: new Date(data.recurring.startDate),
+              lastProcessed: new Date(),
+              nextProcessDate: calculateNextProcessDate(
+                new Date(data.date),
+                data.recurring.pattern.type,
+                data.recurring.pattern.frequency,
+                ['MONTHLY', 'YEARLY'].includes(data.recurring.pattern.type) ? new Date(data.date).getDate() : null,
+                data.recurring.pattern.type === 'WEEKLY' ? new Date(data.date).getDay() : null,
+                data.recurring.pattern.type === 'YEARLY' ? new Date(data.date).getMonth() + 1 : null,
+              ),
             }
           }
         })
@@ -260,7 +271,7 @@ export async function POST(req: Request) {
       timeout: 10000 // Increase timeout to 10 seconds
     });
 
-    return NextResponse.json(result);
+    return NextResponse.json(result, { status: 201 });
 
   } catch (error) {
     if (error instanceof PrismaClientKnownRequestError) {
@@ -275,47 +286,22 @@ export async function POST(req: Request) {
   }
 }
 
-export async function PUT(req: Request) {
+export async function PUT(request: NextRequest) {
   const session = await getServerSession();
   if (!session?.user?.email) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const data = await req.json();
-
   try {
-    // Get user and ensure categories exist
-    const user = await prisma.user.findUniqueOrThrow({
-      where: { email: session.user.email },
-      include: {
-        categories: true,
-      }
-    });
-
-    // Find category and payment method
-    const category = user.categories.find(cat => cat.name === data.category);
-    if (!category) {
-      return NextResponse.json(
-        { error: `Category '${data.category}' not found` },
-        { status: 404 }
-      );
-    }
-
-    const paymentMethod = await prisma.paymentMethod.findUnique({
-      where: { name: data.paymentMethod as PaymentMethodEnum },
-    });
-
-    if (!paymentMethod) {
-      return NextResponse.json({ error: 'Invalid payment method' }, { status: 400 });
-    }
+    const data = await request.json();
 
     const expense = await prisma.expense.update({
       where: { id: data.id },
       data: {
         description: data.description,
-        amount: data.amount,
-        categoryId: category.id,
-        paymentMethodId: paymentMethod.id,
+        amount: parseFloat(data.amount),
+        categoryId: data.categoryId,
+        paymentMethodId: data.paymentMethodId,
         date: new Date(data.date),
       },
       include: {
@@ -344,10 +330,6 @@ export async function PUT(req: Request) {
 
     return NextResponse.json(expense);
   } catch (error) {
-    if (error instanceof PrismaClientKnownRequestError) {
-      const errorMessage = getPrismaErrorMessage(error.code);
-      return NextResponse.json({ error: errorMessage }, { status: 400 });
-    }
     console.error('Expense update error:', error);
     return NextResponse.json(
       { error: 'Failed to update expense' },
@@ -356,23 +338,31 @@ export async function PUT(req: Request) {
   }
 }
 
-export async function DELETE(req: Request) {
+export async function DELETE(request: NextRequest) {
   const session = await getServerSession();
   if (!session?.user?.email) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { searchParams } = new URL(req.url);
+  const searchParams = request.nextUrl.searchParams;
   const id = searchParams.get('id');
 
   if (!id) {
     return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
   }
 
-  const expense = await prisma.expense.update({
-    where: { id },
-    data: { isVoid: true },
-  });
+  try {
+    const expense = await prisma.expense.update({
+      where: { id },
+      data: { isVoid: true },
+    });
 
-  return NextResponse.json(expense);
+    return NextResponse.json(expense);
+  } catch (error) {
+    console.error('Expense deletion error:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete expense' },
+      { status: 500 }
+    );
+  }
 }
