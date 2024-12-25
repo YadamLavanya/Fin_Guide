@@ -174,6 +174,17 @@ export default function ChatPage() {
 
   return (
     <div className="min-h-screen w-full bg-background p-4 md:p-6 lg:p-8">
+      {/* Beta Alert */}
+      <div className="max-w-4xl mx-auto mb-4">
+        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 text-sm text-yellow-700 dark:text-yellow-400 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+          <div>
+            <p className="font-medium mb-1">Beta Feature</p>
+            <p>The AI chat feature is currently in beta. While we strive for accuracy, responses may not always be perfect. Use this feature as a helpful guide rather than a definitive financial advisor.</p>
+          </div>
+        </div>
+      </div>
+
       <Card className="max-w-4xl mx-auto shadow-lg rounded-xl overflow-hidden">
         <div className="flex flex-col h-[80vh] rounded-xl">
           {/* Chat Header */}
@@ -309,6 +320,9 @@ export default function ChatPage() {
                 <span className="sr-only">Send message</span>
               </Button>
             </div>
+            <p className="text-xs text-muted-foreground mt-2 text-center">
+              AI responses may not always be accurate. Please verify important financial information.
+            </p>
           </form>
         </div>
       </Card>
