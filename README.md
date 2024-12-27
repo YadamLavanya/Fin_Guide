@@ -8,7 +8,7 @@
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 [![Contributions Welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/adhamafis/curiopay/issues)
 
-**Curiopay** is a free, open-source budget tracking app that provides intelligent insights into your spending using Local Language Model (LLM) providers. It allows users to track expenses, set budgets, and interact with AI for personalized financial advice. With robust security and privacy features, Curiopay also lets you choose from a variety of LLM providers, manage your data securely, and easily deploy the app locally.
+**Curiopay** is a free, open-source budget tracking app that provides intelligent insights into your spending using Large Language Model (LLM) providers. It allows users to track expenses, set budgets, and interact with AI for personalized financial advice. With robust security and privacy features, Curiopay also lets you choose from a variety of LLM providers, manage your data securely, and easily deploy the app locally.
 
 **Project Status**: Actively developed  
 **Last Updated**: 23.12.2024  
