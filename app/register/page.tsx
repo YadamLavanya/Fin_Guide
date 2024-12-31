@@ -11,11 +11,13 @@ import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function SignupForm() {
   const [loading, setLoading] = useState(false);
   const [passwordError, setPasswordError] = useState("");
   const [formError, setFormError] = useState("");
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const router = useRouter();
   const { data: session, status } = useSession();
 
@@ -53,6 +55,12 @@ export default function SignupForm() {
     setLoading(true);
     setFormError("");
     setPasswordError("");
+
+    if (!acceptTerms) {
+      setFormError("You must accept the Terms of Service and Privacy Policy to continue.");
+      setLoading(false);
+      return;
+    }
 
     const firstname = (e.currentTarget.elements.namedItem("firstname") as HTMLInputElement).value;
     const lastname = (e.currentTarget.elements.namedItem("lastname") as HTMLInputElement).value;
@@ -211,9 +219,38 @@ export default function SignupForm() {
               )}
 
               <div className="space-y-4">
+                <div className="flex items-start space-x-2">
+                  <Checkbox
+                    id="terms"
+                    checked={acceptTerms}
+                    onCheckedChange={(checked) => setAcceptTerms(checked as boolean)}
+                    className="mt-1"
+                  />
+                  <div className="grid gap-1.5 leading-none">
+                    <label
+                      htmlFor="terms"
+                      className="text-sm text-muted-foreground leading-relaxed"
+                    >
+                      By creating an account, I agree to CurioPay's{" "}
+                      <Link href="/terms" className="text-primary hover:text-primary/90 underline">
+                        Terms of Service
+                      </Link>
+                      ,{" "}
+                      <Link href="/privacy" className="text-primary hover:text-primary/90 underline">
+                        Privacy Policy
+                      </Link>
+                      , and{" "}
+                      <Link href="/disclaimer" className="text-primary hover:text-primary/90 underline">
+                        Disclaimer
+                      </Link>
+                      .
+                    </label>
+                  </div>
+                </div>
+
                 <Button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || !acceptTerms}
                   className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground"
                 >
                   {loading ? "Creating account..." : "Create Account"}
