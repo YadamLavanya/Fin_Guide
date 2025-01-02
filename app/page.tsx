@@ -500,7 +500,7 @@ export default function Home() {
             >
               <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
               <p className="text-muted-foreground text-xs sm:text-sm">
-                © 2024 CurioPay. All rights reserved.
+                © 2025 Adham Said. All rights reserved.
               </p>
             </motion.div>
             
