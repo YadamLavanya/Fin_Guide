@@ -4,6 +4,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 import { Toaster } from "@/components/ui/toaster";
 import { Analytics } from "@vercel/analytics/react"
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -17,8 +18,28 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "CurioPay",
-  description: "Master your money, shape your future.",
+  title: "CurioPay - Personal Finance Management",
+  description: "Master your money with CurioPay's AI-powered finance tools. Smart budgeting, expense tracking, and AI-assisted financial planning with LLM integration to help you achieve your financial goals.",
+  keywords: "personal finance, money management, budgeting, expense tracking, financial planning, AI finance, LLM integration, financial assistant",
+  openGraph: {
+    title: "CurioPay - Personal Finance Management",
+    description: "Master your money with CurioPay's AI-powered finance tools",
+    type: "website",
+    locale: "en_US",
+    url: "https://curiopay.vercel.app",
+  },
+  canonical: "https://curiopay.vercel.app",
+  robots: {
+    index: true,
+    follow: true,
+    nocache: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    }
+  }
 };
 
 export default function RootLayout({
