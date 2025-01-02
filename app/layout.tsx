@@ -3,8 +3,8 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { Providers } from "./providers";
 import { Toaster } from "@/components/ui/toaster";
-import { Analytics } from "@vercel/analytics/react"
-import { SpeedInsights } from "@vercel/speed-insights/next"
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -19,8 +19,10 @@ const geistMono = localFont({
 
 export const metadata: Metadata = {
   title: "CurioPay - Personal Finance Management",
-  description: "Master your money with CurioPay's AI-powered finance tools. Smart budgeting, expense tracking, and AI-assisted financial planning with LLM integration to help you achieve your financial goals.",
-  keywords: "personal finance, money management, budgeting, expense tracking, financial planning, AI finance, LLM integration, financial assistant",
+  description:
+    "Master your money with CurioPay's AI-powered finance tools. Smart budgeting, expense tracking, and AI-assisted financial planning with LLM integration to help you achieve your financial goals.",
+  keywords:
+    "personal finance, money management, budgeting, expense tracking, financial planning, AI finance, LLM integration, financial assistant",
   openGraph: {
     title: "CurioPay - Personal Finance Management",
     description: "Master your money with CurioPay's AI-powered finance tools",
@@ -36,10 +38,10 @@ export const metadata: Metadata = {
     googleBot: {
       index: true,
       follow: true,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
-    }
-  }
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
 };
 
 export default function RootLayout({
@@ -49,10 +51,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <meta
+          name="google-site-verification"
+          content="euu36E-v2jvGoBmMWSf7opoV6-xuxmQU9R_5tGwt-7o"
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-background font-sans selection:bg-primary/10`}
       >
         <Analytics />
+        <SpeedInsights />
         <Providers>{children}</Providers>
         <Toaster />
       </body>
