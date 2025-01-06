@@ -45,7 +45,7 @@ export async function sendBudgetAlert(userEmail: string, spent: number, budget: 
                 <table role="presentation" style="width: 600px; border-collapse: collapse; background-color: white; border-radius: 16px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
                   <!-- Header -->
                   <tr>
-                    <td style="padding: 32px; text-align: center; background-color: #dc2626; border-radius: 16px 16px 0 0;">
+                    <td style="padding: 32px; text-align: center; background-color: #000000; border-radius: 16px 16px 0 0;">
                       <h1 style="margin: 0; color: white; font-size: 24px; font-weight: bold;">Budget Alert</h1>
                     </td>
                   </tr>
@@ -65,14 +65,14 @@ export async function sendBudgetAlert(userEmail: string, spent: number, budget: 
                         <tr>
                           <td style="padding: 16px; background-color: #f3f4f6; border-radius: 8px; width: 50%;">
                             <p style="margin: 0; font-size: 14px; color: #6b7280;">Monthly Budget</p>
-                            <p style="margin: 8px 0 0; font-size: 24px; font-weight: bold; color: #047857;">
+                            <p style="margin: 8px 0 0; font-size: 24px; font-weight: bold; color: #000000;">
                               $${budget.toFixed(2)}
                             </p>
                           </td>
                           <td style="width: 16px;"></td>
-                          <td style="padding: 16px; background-color: #fef2f2; border-radius: 8px; width: 50%;">
+                          <td style="padding: 16px; background-color: #f3f4f6; border-radius: 8px; width: 50%;">
                             <p style="margin: 0; font-size: 14px; color: #6b7280;">Current Spending</p>
-                            <p style="margin: 8px 0 0; font-size: 24px; font-weight: bold; color: #dc2626;">
+                            <p style="margin: 8px 0 0; font-size: 24px; font-weight: bold; color: #000000;">
                               $${spent.toFixed(2)}
                             </p>
                           </td>
@@ -80,15 +80,15 @@ export async function sendBudgetAlert(userEmail: string, spent: number, budget: 
                       </table>
                       
                       <!-- Over Budget Amount -->
-                      <div style="background-color: #fef2f2; border-radius: 8px; padding: 16px; text-align: center; margin-bottom: 24px;">
+                      <div style="background-color: #f3f4f6; border-radius: 8px; padding: 16px; text-align: center; margin-bottom: 24px;">
                         <p style="margin: 0; font-size: 14px; color: #6b7280;">Amount Over Budget</p>
-                        <p style="margin: 8px 0 0; font-size: 24px; font-weight: bold; color: #dc2626;">
+                        <p style="margin: 8px 0 0; font-size: 24px; font-weight: bold; color: #000000;">
                           $${(spent - budget).toFixed(2)}
                         </p>
                       </div>
                       
                       <div style="margin: 32px 0; text-align: center;">
-                        <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard" style="display: inline-block; padding: 12px 24px; background-color: #2563eb; color: white; text-decoration: none; border-radius: 8px; font-weight: 500; font-size: 16px;">
+                        <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard" style="display: inline-block; padding: 12px 24px; background-color: #000000; color: white; text-decoration: none; border-radius: 8px; font-weight: 500; font-size: 16px;">
                           View Dashboard
                         </a>
                       </div>
@@ -99,7 +99,7 @@ export async function sendBudgetAlert(userEmail: string, spent: number, budget: 
                   <tr>
                     <td style="padding: 32px; text-align: center; border-top: 1px solid #e5e7eb;">
                       <p style="margin: 0; font-size: 14px; color: #6b7280;">
-                        © 2024 CurioPay. All rights reserved.
+                        © 2025 Adham Said. All rights reserved.
                       </p>
                     </td>
                   </tr>
@@ -135,7 +135,7 @@ export async function sendPasswordResetEmail(userEmail: string, resetToken: stri
                 <table role="presentation" style="width: 600px; border-collapse: collapse; background-color: white; border-radius: 16px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
                   <!-- Header -->
                   <tr>
-                    <td style="padding: 32px; text-align: center; background-color: #2563eb; border-radius: 16px 16px 0 0;">
+                    <td style="padding: 32px; text-align: center; background-color: #000000; border-radius: 16px 16px 0 0;">
                       <h1 style="margin: 0; color: white; font-size: 24px; font-weight: bold;">Reset Your Password</h1>
                     </td>
                   </tr>
@@ -151,7 +151,7 @@ export async function sendPasswordResetEmail(userEmail: string, resetToken: stri
                       </div>
                       
                       <div style="margin: 32px 0; text-align: center;">
-                        <a href="${resetUrl}" style="display: inline-block; padding: 12px 24px; background-color: #2563eb; color: white; text-decoration: none; border-radius: 8px; font-weight: 500; font-size: 16px;">
+                        <a href="${resetUrl}" style="display: inline-block; padding: 12px 24px; background-color: #000000; color: white; text-decoration: none; border-radius: 8px; font-weight: 500; font-size: 16px;">
                           Reset Password
                         </a>
                       </div>
@@ -166,7 +166,7 @@ export async function sendPasswordResetEmail(userEmail: string, resetToken: stri
                   <tr>
                     <td style="padding: 32px; text-align: center; border-top: 1px solid #e5e7eb;">
                       <p style="margin: 0; font-size: 14px; color: #6b7280;">
-                        © 2024 CurioPay. All rights reserved.
+                        © 2025 Adham Said. All rights reserved.
                       </p>
                     </td>
                   </tr>
@@ -200,7 +200,7 @@ export async function sendDataExport(userEmail: string, zipBuffer: Buffer) {
                 <table role="presentation" style="width: 600px; border-collapse: collapse; background-color: white; border-radius: 16px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
                   <!-- Header -->
                   <tr>
-                    <td style="padding: 32px; text-align: center; background-color: #2563eb; border-radius: 16px 16px 0 0;">
+                    <td style="padding: 32px; text-align: center; background-color: #000000; border-radius: 16px 16px 0 0;">
                       <h1 style="margin: 0; color: white; font-size: 24px; font-weight: bold;">Your Data Export</h1>
                     </td>
                   </tr>
@@ -221,7 +221,7 @@ export async function sendDataExport(userEmail: string, zipBuffer: Buffer) {
                   <tr>
                     <td style="padding: 32px; text-align: center; border-top: 1px solid #e5e7eb;">
                       <p style="margin: 0; font-size: 14px; color: #6b7280;">
-                        © 2024 CurioPay. All rights reserved.
+                        © 2025 Adham Said. All rights reserved.
                       </p>
                     </td>
                   </tr>
@@ -261,7 +261,7 @@ export async function sendVerificationEmail(userEmail: string, token: string) {
                 <table role="presentation" style="width: 600px; border-collapse: collapse; background-color: white; border-radius: 16px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
                   <!-- Header -->
                   <tr>
-                    <td style="padding: 32px; text-align: center; background-color: #2563eb; border-radius: 16px 16px 0 0;">
+                    <td style="padding: 32px; text-align: center; background-color: #000000; border-radius: 16px 16px 0 0;">
                       <h1 style="margin: 0; color: white; font-size: 24px; font-weight: bold;">Verify Your Email</h1>
                     </td>
                   </tr>
@@ -277,7 +277,7 @@ export async function sendVerificationEmail(userEmail: string, token: string) {
                       </div>
                       
                       <div style="margin: 32px 0; text-align: center;">
-                        <a href="${verifyUrl}" style="display: inline-block; padding: 12px 24px; background-color: #2563eb; color: white; text-decoration: none; border-radius: 8px; font-weight: 500; font-size: 16px;">
+                        <a href="${verifyUrl}" style="display: inline-block; padding: 12px 24px; background-color: #000000; color: white; text-decoration: none; border-radius: 8px; font-weight: 500; font-size: 16px;">
                           Verify Email
                         </a>
                       </div>
@@ -292,7 +292,7 @@ export async function sendVerificationEmail(userEmail: string, token: string) {
                   <tr>
                     <td style="padding: 32px; text-align: center; border-top: 1px solid #e5e7eb;">
                       <p style="margin: 0; font-size: 14px; color: #6b7280;">
-                        © 2024 CurioPay. All rights reserved.
+                        © 2025 Adham Said. All rights reserved.
                       </p>
                     </td>
                   </tr>

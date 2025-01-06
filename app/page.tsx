@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { ShimmerButton } from "@/components/ui/shimmer-button";
 import { cn } from "@/lib/utils";
 import {
@@ -72,6 +73,12 @@ const stats = [
 ];
 
 export default function Home() {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Navbar */}
@@ -157,6 +164,17 @@ export default function Home() {
               </h1>
             </div>
           </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            className="flex items-center justify-center gap-2 mb-4"
+          >
+            <span className="text-lg sm:text-xl text-muted-foreground">Where</span>
+            <span className="font-semibold text-lg sm:text-xl bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent">Curiosity</span>
+            <span className="text-lg sm:text-xl text-muted-foreground">meets</span>
+            <span className="font-semibold text-lg sm:text-xl bg-gradient-to-r from-green-600 to-green-400 bg-clip-text text-transparent">Payments</span>
+          </motion.div>
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -204,6 +222,33 @@ export default function Home() {
               </motion.div>
             </a>
           </motion.div>
+        </div>
+      </section>
+
+      {/* Video Showcase */}
+      <section className="py-12 px-4 sm:px-6 lg:px-8 bg-background">
+        <div className="max-w-5xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            className="relative aspect-video rounded-xl overflow-hidden border shadow-xl"
+          >
+            <div className="absolute inset-0 bg-gradient-to-tr from-background/10 to-background/5" />
+            {isMounted && (
+              <iframe
+                src="https://drive.google.com/file/d/1CRqOTKQQ96kuANcnQ-1mIuy5FceSuhkt/preview?embedded=true"
+                className="w-full h-full absolute inset-0"
+                style={{ border: 'none' }}
+                allowFullScreen
+                loading="eager"
+              />
+            )}
+          </motion.div>
+          <div className="text-center mt-6">
+            <p className="text-sm text-muted-foreground">
+              Watch how CurioPay helps you manage your finances with AI-powered insights
+            </p>
+          </div>
         </div>
       </section>
 
