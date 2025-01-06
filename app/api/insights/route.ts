@@ -412,6 +412,24 @@ export async function GET(req: Request) {
       );
     }
 
+    // Check for Ollama-specific errors
+    if (llmProvider === 'ollama' && error instanceof Error) {
+      const isConnectionError = error.message.includes('ECONNREFUSED') || 
+                              error.message.includes('Failed to fetch') ||
+                              error.message.toLowerCase().includes('connection');
+      
+      if (isConnectionError) {
+        return NextResponse.json(
+          {
+            error: 'Ollama connection error',
+            action: 'configure_llm',
+            message: 'Unable to connect to Ollama. Please make sure Ollama is running and accessible at the configured URL.'
+          },
+          { status: 503 }
+        );
+      }
+    }
+
     return NextResponse.json(
       { error: 'Failed to generate insights' },
       { status: 500 }

@@ -139,7 +139,7 @@ function InsightsSection() {
       }
 
       // Check if API key exists before making the request
-      if (!apiKeys[defaultLLM as keyof typeof apiKeys]) {
+      if (defaultLLM !== 'ollama' && !apiKeys[defaultLLM as keyof typeof apiKeys]) {
         setError('configuration_required');
         setConfigError('Please configure your LLM provider and API key in Settings → AI Settings.');
         setLoading(false);
@@ -158,6 +158,11 @@ function InsightsSection() {
 
       if (!response.ok) {
         if (response.status === 401 && data.action === 'configure_llm') {
+          setError('configuration_required');
+          setConfigError(data.message);
+          return;
+        }
+        if (response.status === 503 && data.error === 'Ollama connection error') {
           setError('configuration_required');
           setConfigError(data.message);
           return;

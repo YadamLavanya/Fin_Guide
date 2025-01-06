@@ -1,5 +1,5 @@
 import { AzureOpenAI } from "openai";
-import { LLMProvider, TransactionData, InsightData } from '../types';
+import { LLMProvider, TransactionData, InsightData, ChatMessage, ChatResponse } from '../types';
 import { generateLLMPrompt } from '../utils';
 import { llmLogger } from '../logging';
 import type { ProviderConfig } from '../factory';
@@ -117,6 +117,56 @@ export class AzureProvider implements LLMProvider {
         timestamp: new Date().toISOString(),
         provider: 'azure',
         prompt,
+        error,
+        duration: Date.now() - startTime,
+        success: false,
+        level: 'error'
+      });
+      throw error;
+    }
+  }
+
+  async chat(messages: ChatMessage[]): Promise<ChatResponse> {
+    const startTime = Date.now();
+
+    try {
+      const response = await this.client.chat.completions.create({
+        model: this.model,
+        messages: messages.map(msg => ({
+          role: msg.role,
+          content: msg.content
+        })),
+        temperature: 0.7,
+        max_tokens: 1000
+      });
+
+      const content = response.choices[0].message?.content?.trim() || '';
+
+      const chatResponse: ChatResponse = {
+        content,
+        usage: {
+          prompt_tokens: response.usage.prompt_tokens,
+          completion_tokens: response.usage.completion_tokens,
+          total_tokens: response.usage.total_tokens
+        }
+      };
+
+      llmLogger.log({
+        timestamp: new Date().toISOString(),
+        provider: 'azure',
+        prompt: messages[messages.length - 1].content,
+        response: chatResponse,
+        duration: Date.now() - startTime,
+        success: true,
+        level: 'info'
+      });
+
+      return chatResponse;
+    } catch (error) {
+      llmLogger.log({
+        timestamp: new Date().toISOString(),
+        provider: 'azure',
+        prompt: messages[messages.length - 1].content,
         error,
         duration: Date.now() - startTime,
         success: false,

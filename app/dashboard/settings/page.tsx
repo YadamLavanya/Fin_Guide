@@ -34,7 +34,8 @@ import {
   EyeIcon,
   EyeOffIcon,
   Link,
-  Palette
+  Palette,
+  InfoIcon
 } from "lucide-react";
 import {
   Dialog,
@@ -59,23 +60,30 @@ import {
   AlertDialogFooter,
   AlertDialogAction,
   AlertDialogCancel,
-} from "@/components/ui/alert-dialog"
-import { Label } from "@/components/ui/label";
-import Image from 'next/image';
-import { themes } from "@/lib/themes";
+} from "@/components/ui/alert-dialog";
 import {
   Alert,
   AlertDescription,
   AlertTitle,
-} from "@/components/ui/alert"
-import { InfoIcon } from "lucide-react";
+} from "@/components/ui/alert";
+import { Label } from "@/components/ui/label";
+import Image from 'next/image';
+import { themes } from "@/lib/themes";
+import { useSession } from "next-auth/react";
 
 interface UserSettings {
-  currency: string;
-  theme?: string;
+  preferences: {
+    currency: string;
+    language: string;
+    theme: string;
+    monthlyBudget: number;
+  };
   notifications: {
     email: boolean;
+    push: boolean;
+    sms: boolean;
   };
+  emailVerified: Date | null;
 }
 
 interface LLMProvider {
@@ -100,10 +108,20 @@ interface LLMProvider {
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
+  const { data: session } = useSession();
   const [settings, setSettings] = useState<UserSettings>({
-    currency: 'USD',
-    theme: theme,
-    notifications: { email: true }
+    preferences: {
+      currency: 'USD',
+      language: 'en',
+      theme: theme,
+      monthlyBudget: 0
+    },
+    notifications: {
+      email: false,
+      push: false,
+      sms: false
+    },
+    emailVerified: null
   });
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<CategorySettings[]>([]);
@@ -459,13 +477,9 @@ export default function SettingsPage() {
       if (!response.ok) throw new Error('Failed to update settings');
       
       // Update localStorage and state
-      Object.entries(updates).forEach(([key, value]) => {
-        if (key === 'notifications' && typeof value === 'object') {
-          localStorage.setItem('email-notifications', value.email.toString());
-        } else {
-          localStorage.setItem(key, String(value));
-        }
-      });
+      if (updates.preferences?.theme) {
+        localStorage.setItem('theme', updates.preferences.theme);
+      }
       
       setSettings(newSettings);
       toast({
@@ -735,8 +749,10 @@ export default function SettingsPage() {
                     </p>
                   </div>
                   <Select
-                    value={settings.currency}
-                    onValueChange={(value) => handleSettingChange({ currency: value })}
+                    value={settings.preferences.currency}
+                    onValueChange={(value) => handleSettingChange({ 
+                      preferences: { ...settings.preferences, currency: value }
+                    })}
                     disabled={loading}
                   >
                     <SelectTrigger className="w-full sm:w-[180px]">
@@ -770,14 +786,51 @@ export default function SettingsPage() {
                     checked={settings.notifications.email}
                     onCheckedChange={(checked) => 
                       handleSettingChange({ 
-                        notifications: { ...settings.notifications, email: checked } 
+                        notifications: { ...settings.notifications, email: checked }
                       })
                     }
-                    disabled={loading}
+                    disabled={loading || !settings.emailVerified}
                   />
                 </div>
+                {!settings.emailVerified && (
+                  <Alert className="mt-2">
+                    <InfoIcon className="h-4 w-4" />
+                    <AlertTitle>Email Not Verified</AlertTitle>
+                    <AlertDescription>
+                      You need to verify your email address to receive notifications.
+                    </AlertDescription>
+                  </Alert>
+                )}
               </div>
             </section>
+
+            {/* Email Verification */}
+            {!settings.emailVerified && (
+              <section>
+                <h2 className="text-lg font-semibold mb-2 sm:mb-4">Email Verification</h2>
+                <div className="space-y-4">
+                  <Alert>
+                    <InfoIcon className="h-4 w-4" />
+                    <AlertTitle>Verify Your Email</AlertTitle>
+                    <AlertDescription className="mt-2">
+                      Some features are restricted until you verify your email address:
+                      <ul className="list-disc list-inside mt-2 space-y-1">
+                        <li>Exporting your data</li>
+                        <li>Receiving email notifications</li>
+                        <li>Account recovery options</li>
+                      </ul>
+                    </AlertDescription>
+                  </Alert>
+                  <Button
+                    variant="default"
+                    onClick={() => setShowVerifyDialog(true)}
+                    className="w-full sm:w-auto"
+                  >
+                    Verify Email Address
+                  </Button>
+                </div>
+              </section>
+            )}
 
             {/* AI Settings */}
             <section>

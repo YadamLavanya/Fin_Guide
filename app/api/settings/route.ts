@@ -53,7 +53,8 @@ export async function GET() {
         email: user.notifications.some(n => n.type === 'EMAIL' && n.enabled) || false,
         push: user.notifications.some(n => n.type === 'PUSH' && n.enabled) || false,
         sms: user.notifications.some(n => n.type === 'SMS' && n.enabled) || false,
-      }
+      },
+      emailVerified: user.emailVerified
     });
   } catch (error) {
     console.error('Settings fetch error:', error);

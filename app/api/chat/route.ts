@@ -191,30 +191,95 @@ Initial greeting: "Hey! I'm Curio 👋 How can I help you manage your finances t
     ];
 
     // Create LLM provider instance
-    const provider = createLLMProvider(llmProvider as any, providerConfig);
+    try {
+      const provider = createLLMProvider(llmProvider as any, providerConfig);
 
-    // Check if provider supports chat
-    if (!provider.chat) {
+      // Check if provider supports chat
+      if (!provider.chat) {
+        return NextResponse.json(
+          { 
+            error: 'Provider not supported',
+            action: 'configure_llm',
+            message: 'Selected provider does not support chat. Please choose a different provider in Settings.'
+          },
+          { status: 400 }
+        );
+      }
+
+      // Get chat response
+      const response = await provider.chat(chatMessages);
+
+      llmLogger.log({
+        timestamp: new Date().toISOString(),
+        provider: llmProvider,
+        response,
+        duration: Date.now() - startTime,
+        success: true,
+        level: 'info',
+        prompt: enhancedSystemPrompt
+      });
+
+      return NextResponse.json(response);
+    } catch (error) {
+      llmLogger.log({
+        timestamp: new Date().toISOString(),
+        provider: llmProvider,
+        error,
+        duration: Date.now() - startTime,
+        success: false,
+        level: 'error',
+        prompt: enhancedSystemPrompt
+      });
+
+      // Check for Ollama-specific errors first
+      if (llmProvider === 'ollama' && error instanceof Error) {
+        const isConnectionError = error.message.includes('ECONNREFUSED') || 
+                                error.message.includes('Failed to fetch') ||
+                                error.message.toLowerCase().includes('connection');
+        
+        if (isConnectionError) {
+          return NextResponse.json(
+            {
+              error: 'Ollama connection error',
+              action: 'configure_llm',
+              message: 'Unable to connect to Ollama. Please make sure Ollama is running and accessible at the configured URL.'
+            },
+            { status: 503 }
+          );
+        }
+
+        // Other Ollama-specific errors
+        return NextResponse.json(
+          {
+            error: 'Ollama error',
+            action: 'configure_llm',
+            message: `Ollama error: ${error.message}. Please check your Ollama configuration and model settings.`
+          },
+          { status: 500 }
+        );
+      }
+
+      // Check if error is due to missing API key
+      if (error instanceof Error && 
+          (error.message.includes('API key') || 
+           error.message.toLowerCase().includes('authentication') ||
+           error.message.toLowerCase().includes('unauthorized'))) {
+        return NextResponse.json(
+          { 
+            error: 'API key not configured',
+            action: 'configure_llm',
+            message: 'Please configure your LLM provider and API key in Settings → AI Settings.'
+          },
+          { status: 401 }
+        );
+      }
+
+      // Generic error
       return NextResponse.json(
-        { error: 'Selected provider does not support chat' },
-        { status: 400 }
+        { error: 'Failed to process chat request' },
+        { status: 500 }
       );
     }
-
-    // Get chat response
-    const response = await provider.chat(chatMessages);
-
-    llmLogger.log({
-      timestamp: new Date().toISOString(),
-      provider: llmProvider,
-      response,
-      duration: Date.now() - startTime,
-      success: true,
-      level: 'info',
-      prompt: enhancedSystemPrompt
-    });
-
-    return NextResponse.json(response);
   } catch (error) {
     llmLogger.log({
       timestamp: new Date().toISOString(),
@@ -239,6 +304,24 @@ Initial greeting: "Hey! I'm Curio 👋 How can I help you manage your finances t
         },
         { status: 401 }
       );
+    }
+
+    // Check for Ollama-specific errors
+    if (llmProvider === 'ollama' && error instanceof Error) {
+      const isConnectionError = error.message.includes('ECONNREFUSED') || 
+                              error.message.includes('Failed to fetch') ||
+                              error.message.toLowerCase().includes('connection');
+      
+      if (isConnectionError) {
+        return NextResponse.json(
+          {
+            error: 'Ollama connection error',
+            action: 'configure_llm',
+            message: 'Unable to connect to Ollama. Please make sure Ollama is running and accessible at the configured URL.'
+          },
+          { status: 503 }
+        );
+      }
     }
 
     return NextResponse.json(

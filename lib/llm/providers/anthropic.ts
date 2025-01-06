@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { LLMProvider, TransactionData, InsightData } from '../types';
+import { LLMProvider, TransactionData, InsightData, ChatMessage, ChatResponse } from '../types';
 import { generateLLMPrompt } from '../utils';
 import { llmLogger } from '../logging';
 import type { ProviderConfig } from '../factory';
@@ -103,6 +103,58 @@ export class AnthropicProvider implements LLMProvider {
         timestamp: new Date().toISOString(),
         provider: 'anthropic',
         prompt,
+        error,
+        duration: Date.now() - startTime,
+        success: false,
+        level: 'error'
+      });
+      throw error;
+    }
+  }
+
+  async chat(messages: ChatMessage[]): Promise<ChatResponse> {
+    const startTime = Date.now();
+
+    try {
+      const response = await this.client.messages.create({
+        model: this.model,
+        messages: messages
+          .filter(msg => msg.role !== 'system')
+          .map(msg => ({
+            role: msg.role === 'user' ? 'user' : 'assistant',
+            content: msg.content
+          })),
+        temperature: 0.7,
+        max_tokens: 1000
+      });
+
+      const content = response.content[0].type === 'text' ? response.content[0].text : '';
+
+      const chatResponse: ChatResponse = {
+        content,
+        usage: {
+          prompt_tokens: undefined,
+          completion_tokens: undefined,
+          total_tokens: undefined
+        }
+      };
+
+      llmLogger.log({
+        timestamp: new Date().toISOString(),
+        provider: 'anthropic',
+        prompt: messages[messages.length - 1].content,
+        response: chatResponse,
+        duration: Date.now() - startTime,
+        success: true,
+        level: 'info'
+      });
+
+      return chatResponse;
+    } catch (error) {
+      llmLogger.log({
+        timestamp: new Date().toISOString(),
+        provider: 'anthropic',
+        prompt: messages[messages.length - 1].content,
         error,
         duration: Date.now() - startTime,
         success: false,

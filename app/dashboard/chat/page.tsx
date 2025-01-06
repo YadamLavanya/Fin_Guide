@@ -48,7 +48,7 @@ export default function ChatPage() {
     // Check for API key on load
     const defaultLLM = localStorage.getItem('default-llm') || 'groq';
     const apiKeys = JSON.parse(localStorage.getItem('llm-api-keys') || '{}');
-    if (!apiKeys[defaultLLM]) {
+    if (defaultLLM !== 'ollama' && !apiKeys[defaultLLM]) {
       setConfigError('Please configure your LLM provider and API key in Settings.');
     } else {
       setConfigError(null);
@@ -70,7 +70,7 @@ export default function ChatPage() {
     // Check for API key before sending message
     const defaultLLM = localStorage.getItem('default-llm') || 'groq';
     const apiKeys = JSON.parse(localStorage.getItem('llm-api-keys') || '{}');
-    if (!apiKeys[defaultLLM]) {
+    if (defaultLLM !== 'ollama' && !apiKeys[defaultLLM]) {
       toast({
         title: "Configuration Required",
         description: (
@@ -116,29 +116,75 @@ export default function ChatPage() {
 
       const data = await response.json();
       
-      if (response.status === 401 && data.action === 'configure_llm') {
-        toast({
-          title: "Configuration Required",
-          description: (
-            <div className="flex flex-col gap-2">
-              <p>{data.message}</p>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => window.location.href = '/dashboard/settings'}
-                className="mt-2"
-              >
-                <Settings className="w-4 h-4 mr-2" />
-                Go to Settings
-              </Button>
-            </div>
-          ),
-          variant: "destructive",
-        });
-        return;
+      if (!response.ok) {
+        if (response.status === 401 && data.action === 'configure_llm') {
+          toast({
+            title: "Configuration Required",
+            description: (
+              <div className="flex flex-col gap-2">
+                <p>{data.message}</p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => window.location.href = '/dashboard/settings'}
+                  className="mt-2"
+                >
+                  <Settings className="w-4 h-4 mr-2" />
+                  Go to Settings
+                </Button>
+              </div>
+            ),
+            variant: "destructive",
+          });
+          return;
+        }
+
+        if (response.status === 503 && data.error === 'Ollama connection error') {
+          toast({
+            title: "Ollama Connection Error",
+            description: (
+              <div className="flex flex-col gap-2">
+                <p>{data.message}</p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => window.location.href = '/dashboard/settings'}
+                  className="mt-2"
+                >
+                  <Settings className="w-4 h-4 mr-2" />
+                  Check Ollama Settings
+                </Button>
+              </div>
+            ),
+            variant: "destructive",
+          });
+          return;
+        }
+
+        if (data.error === 'Ollama error') {
+          toast({
+            title: "Ollama Error",
+            description: (
+              <div className="flex flex-col gap-2">
+                <p>{data.message}</p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => window.location.href = '/dashboard/settings'}
+                  className="mt-2"
+                >
+                  <Settings className="w-4 h-4 mr-2" />
+                  Check Ollama Settings
+                </Button>
+              </div>
+            ),
+            variant: "destructive",
+          });
+          return;
+        }
+
+        throw new Error(data.error || 'Failed to get response');
       }
-      
-      if (!response.ok) throw new Error('Failed to get response');
 
       const assistantMessage: Message = { role: 'assistant', content: data.content };
       setMessages(prev => [...prev, assistantMessage]);

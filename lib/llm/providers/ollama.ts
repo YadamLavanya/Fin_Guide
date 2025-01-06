@@ -1,4 +1,5 @@
-import { LLMProvider, TransactionData, InsightData } from '../types';
+import { Ollama } from 'ollama';
+import { LLMProvider, TransactionData, InsightData, ChatMessage, ChatResponse } from '../types';
 import { generateLLMPrompt } from '../utils';
 import { llmLogger } from '../logging';
 import type { ProviderConfig } from '../factory';
@@ -9,19 +10,22 @@ export interface OllamaConfig extends ProviderConfig {
   customModel?: string;
   contextLength?: number;
   temperature?: number;
+  mode?: 'insights' | 'chat';
 }
 
 export class OllamaProvider implements LLMProvider {
-  private baseUrl: string;
+  private client: Ollama;
   private model: string;
-  private contextLength: number;
   private temperature: number;
+  private mode: 'insights' | 'chat';
 
   constructor(config: OllamaConfig) {
-    this.baseUrl = config.baseUrl || 'http://localhost:11434';
+    this.client = new Ollama({
+      host: config.baseUrl || 'http://localhost:11434'
+    });
     this.model = config.customModel || config.model || 'llama2';
-    this.contextLength = config.contextLength || 4096;
     this.temperature = config.temperature || 0.7;
+    this.mode = config.mode || 'insights';
   }
 
   async analyze(data: TransactionData): Promise<InsightData> {
@@ -29,77 +33,45 @@ export class OllamaProvider implements LLMProvider {
     const prompt = generateLLMPrompt(data);
 
     try {
-      const response = await fetch(`${this.baseUrl}/api/generate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: this.model,
-          prompt: `You are a financial analysis assistant. Analyze the following data and return a JSON response in this exact format, nothing else:
-{
-  "commentary": ["observation 1", "observation 2"],
-  "tips": ["tip 1", "tip 2"]
-}
-
-Here's the data:
-${prompt}`,
-          options: {
-            temperature: this.temperature,
-            num_ctx: this.contextLength,
+      const response = await this.client.chat({
+        model: this.model,
+        messages: [
+          { 
+            role: 'system', 
+            content: 'You are a financial analysis assistant. Return valid JSON with commentary and tips arrays.' 
+          },
+          { 
+            role: 'user', 
+            content: prompt 
           }
-        })
+        ],
+        format: 'json',
+        options: {
+          temperature: this.temperature
+        }
       });
 
-      if (!response.ok) {
-        throw new Error(`Ollama API error: ${response.statusText}`);
+      const content = response.message?.content;
+      if (!content) {
+        throw new Error('Empty response from LLM');
       }
 
-      // Collect the full response text
-      let fullResponse = '';
-      const reader = response.body?.getReader();
-      if (!reader) throw new Error('No response body');
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        
-        // Convert the Uint8Array to text
-        const chunk = new TextDecoder().decode(value);
-        try {
-          // Each chunk is a JSON object with a 'response' field
-          const parsed = JSON.parse(chunk);
-          fullResponse += parsed.response;
-        } catch {
-          // If parsing fails, just append the chunk
-          fullResponse += chunk;
-        }
-      }
-
-      // Extract JSON from the response
-      const jsonMatch = fullResponse.match(/\{[\s\S]*\}/);
       let parsedResponse;
-      
-      if (jsonMatch) {
-        try {
-          parsedResponse = JSON.parse(jsonMatch[0]);
-        } catch {
-          parsedResponse = {
-            commentary: ['Failed to parse response'],
-            tips: ['Please try again']
-          };
-        }
-      } else {
+      try {
+        parsedResponse = JSON.parse(content);
+      } catch {
         parsedResponse = {
-          commentary: ['No valid JSON found in response'],
+          commentary: ['Failed to parse JSON response'],
           tips: ['Please try again']
         };
       }
-
-      // Ensure arrays
-      if (!Array.isArray(parsedResponse.commentary)) {
-        parsedResponse.commentary = [parsedResponse.commentary].filter(Boolean);
-      }
-      if (!Array.isArray(parsedResponse.tips)) {
-        parsedResponse.tips = [parsedResponse.tips].filter(Boolean);
+      
+      // Ensure response has required structure
+      if (!Array.isArray(parsedResponse.commentary) || !Array.isArray(parsedResponse.tips)) {
+        parsedResponse = {
+          commentary: Array.isArray(parsedResponse.commentary) ? parsedResponse.commentary : [],
+          tips: Array.isArray(parsedResponse.tips) ? parsedResponse.tips : []
+        };
       }
 
       llmLogger.log({
@@ -122,6 +94,55 @@ ${prompt}`,
         duration: Date.now() - startTime,
         success: false,
         level: 'error'
+      });
+      throw error;
+    }
+  }
+
+  async chat(messages: ChatMessage[]): Promise<ChatResponse> {
+    const startTime = Date.now();
+
+    try {
+      const response = await this.client.chat({
+        model: this.model,
+        messages: messages.map(msg => ({
+          role: msg.role,
+          content: msg.content
+        })),
+        options: {
+          temperature: this.temperature
+        }
+      });
+
+      const content = response.message?.content;
+      if (!content) {
+        throw new Error('Empty response from LLM');
+      }
+
+      const chatResponse: ChatResponse = {
+        content
+      };
+
+      llmLogger.log({
+        timestamp: new Date().toISOString(),
+        provider: 'ollama',
+        response: chatResponse,
+        duration: Date.now() - startTime,
+        success: true,
+        level: 'info',
+        prompt: messages[messages.length - 1]?.content || ''
+      });
+
+      return chatResponse;
+    } catch (error) {
+      llmLogger.log({
+        timestamp: new Date().toISOString(),
+        provider: 'ollama',
+        error,
+        duration: Date.now() - startTime,
+        success: false,
+        level: 'error',
+        prompt: messages[messages.length - 1]?.content || ''
       });
       throw error;
     }

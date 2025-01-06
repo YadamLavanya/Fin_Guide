@@ -240,7 +240,7 @@ export async function sendDataExport(userEmail: string, zipBuffer: Buffer) {
 }
 
 export async function sendVerificationEmail(userEmail: string, token: string) {
-  const verifyUrl = `${process.env.NEXT_PUBLIC_APP_URL}/reset-password/${token}?type=email`;
+  const verifyUrl = `${process.env.NEXT_PUBLIC_APP_URL}/verification/${token}`;
   
   await transporter.sendMail({
     from: process.env.SMTP_FROM,
