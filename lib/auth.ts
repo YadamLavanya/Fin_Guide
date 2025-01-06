@@ -1,10 +1,23 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 import { prisma } from './prisma';
 
 export const authOptions: NextAuthOptions = {
   providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      authorization: {
+        params: {
+          scope: 'openid email profile',
+          prompt: "consent",
+          access_type: "offline",
+          response_type: "code"
+        }
+      }
+    }),
     CredentialsProvider({
       name: "credentials",
       credentials: {
@@ -40,12 +53,7 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Invalid credentials");
         }
 
-        return {
-          id: user.id,
-          email: user.email,
-          name: `${user.firstName} ${user.lastName}`,
-          role: user.role
-        };
+        return user;
       }
     })
   ],
@@ -54,10 +62,55 @@ export const authOptions: NextAuthOptions = {
     error: "/login",
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
       if (user) {
         token.id = user.id;
         token.role = user.role;
+      }
+
+      // If it's a Google sign in
+      if (account?.provider === "google") {
+        const existingUser = await prisma.user.findUnique({
+          where: { 
+            email: token.email!,
+            isDeleted: false
+          }
+        });
+
+        if (existingUser) {
+          // Update the user's Google provider info
+          await prisma.user.update({
+            where: { id: existingUser.id },
+            data: {
+              provider: "google",
+              providerAccountId: account.providerAccountId,
+              emailVerified: new Date(),
+            }
+          });
+          token.id = existingUser.id;
+          token.role = existingUser.role;
+        } else {
+          // Create a new user
+          const newUser = await prisma.user.create({
+            data: {
+              email: token.email!,
+              firstName: token.name?.split(' ')[0] || 'User',
+              lastName: token.name?.split(' ').slice(1).join(' ') || '',
+              emailVerified: new Date(),
+              provider: "google",
+              providerAccountId: account.providerAccountId,
+              preferences: {
+                create: {
+                  currencyId: (await prisma.currency.findFirst())!.id,
+                  languageId: (await prisma.language.findFirst())!.id,
+                  themeId: (await prisma.theme.findFirst())!.id,
+                }
+              }
+            }
+          });
+          token.id = newUser.id;
+          token.role = newUser.role;
+        }
       }
       return token;
     },
