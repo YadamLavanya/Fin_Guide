@@ -49,12 +49,6 @@ Curiopay is a free, open-source app for tracking your budget and getting persona
    - Configures environment variables (`.env` file).  
    - Sets up a local PostgreSQL database with Docker.  
    - Guides you through API keys and email setup.  
-
-3. Start the app:  
-   ```bash  
-   npm run dev  
-   ```  
-
 ---
 
 ## Usage  
