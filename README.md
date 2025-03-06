@@ -1,12 +1,18 @@
 Finguide: AI-Powered Financial Budgeting Platform
 📌 Overview
+    
     Finguide is a financial budgeting platform that helps users track income, expenses, and savings while receiving AI-driven financial insights. The system automatically categorizes transactions, provides real-time budget tracking, and offers goal-based financial planning to improve money management.
 
 🎯 Objective
+  
   ✔ Real-time tracking of financial transactions.
+  
   ✔ AI-powered financial insights for better decision-making.
+  
   ✔ Smart expense categorization for easy budgeting.
+  
   ✔ Goal-based financial planning to help users save effectively.
+  
   ✔ Simple and secure platform for personal finance management.
 
 🛠️ Technologies Used
